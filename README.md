@@ -1,4 +1,4 @@
-<h1 align="center">Hi 👋, I'm Jurrean / Red Panda</h1>
+<h1 align="center">Hi 👋, I'm Red Panda</h1>
 <h3 align="center">Passionate about AI and all things tech</h3>
 
 <p align="center">
