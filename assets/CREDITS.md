@@ -4,8 +4,7 @@ Artwork vendored into `icons.json` as path data:
 
 | Source | Licence | Used for |
 | --- | --- | --- |
-| [Simple Icons](https://github.com/simple-icons/simple-icons) | CC0-1.0 | brand marks in the stack block |
-| [Primer Octicons](https://github.com/primer/octicons) | MIT | repo, code, history, graph, terminal and link glyphs |
+| [Primer Octicons](https://github.com/primer/octicons) | MIT | the repo, code and history glyphs |
 
 Brand marks remain trademarks of their respective owners and are used here
 only to identify the tools they belong to.

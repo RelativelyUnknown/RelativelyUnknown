@@ -24,9 +24,9 @@ jobs:
       - name: Clone source repositories
         run: |
           mkdir -p ../src
-          for repo in Mallard burnt tree-sitter-sql-extended RedPandaMC; do
-            git clone --quiet "https://github.com/${{ github.repository_owner }}/$repo.git" "../src/$repo" \
-              || echo "skip $repo (not found or private)"
+          cd assets && python3 list_repos.py | while read -r owner repo; do
+            git clone --quiet "https://github.com/$owner/$repo.git" "../../src/${owner}__${repo}" \
+              || echo "skip $owner/$repo (not found or private)"
           done
 
       - name: Rebuild data and SVGs
