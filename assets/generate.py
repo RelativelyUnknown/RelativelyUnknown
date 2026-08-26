@@ -186,19 +186,19 @@ def header(theme):
 # REPO CARDS
 # =====================================================================
 def repo_card(theme, name, desc_lines, langs, meta, hue_i):
-    W, H = 486, 190
+    W, H = 326, 188
     hue = hues(theme)[hue_i]
     b = [card(W, H), rect(8, 0.5, W - 16, 4, hue, rx=2)]
-    b.append(icon('oc', 'repo-16', 20, 28, 16, hue))
-    b.append(txt(46, 41, name, size=15, weight='600'))
-    b.append(rect(W - 82, 27, 62, 20, None, 'border', rx=10))
-    b.append(txt(W - 51, 41, 'Public', size=11, fill='muted', anchor='middle'))
+    b.append(icon('oc', 'repo-16', 20, 29, 15, hue))
+    b.append(txt(44, 41, name, size=13, weight='600'))
+    b.append(rect(W - 76, 27, 58, 19, None, 'border', rx=10))
+    b.append(txt(W - 47, 40, 'Public', size=10.5, fill='muted', anchor='middle'))
     for i, ln in enumerate(desc_lines):
-        b.append(txt(20, 74 + i * 19, ln, size=13, fill='muted'))
+        b.append(txt(20, 72 + i * 17, ln, size=11.5, fill='muted'))
 
     total = sum(p for _, p in langs) or 1
     bw, off = W - 40, 0.0
-    b.append('<g transform="translate(20,128)">')
+    b.append('<g transform="translate(20,124)">')
     for i, (lname, pct) in enumerate(langs):
         seg = bw * pct / total
         b.append(f'<rect x="{off:.1f}" y="0" width="{max(seg - 2, 2):.1f}" height="9" rx="4.5" '
@@ -208,13 +208,13 @@ def repo_card(theme, name, desc_lines, langs, meta, hue_i):
     b.append('</g>')
 
     for i, (lname, pct) in enumerate(langs[:3]):
-        lx = 20 + i * 150
+        lx = 20 + i * 98
         b.append(f'<g class="rise" style="animation-delay:{.4 + i * .06:.2f}s">'
-                 f'<circle cx="{lx + 5}" cy="160" r="5" fill="{LANG.get(lname, "#8b949e")}"/>'
-                 f'{txt(lx + 17, 164, f"{lname} {pct}%", size=11.5, fill="muted")}</g>')
+                 f'<circle cx="{lx + 4}" cy="156" r="4.5" fill="{LANG.get(lname, "#8b949e")}"/>'
+                 f'{txt(lx + 14, 160, f"{lname} {pct}%", size=10, fill="muted")}</g>')
 
-    b.append(icon('oc', 'history-16', 20, 172, 13, 'muted'))
-    b.append(txt(38, 183, meta, size=11, fill='muted'))
+    b.append(icon('oc', 'history-16', 20, 170, 12, 'muted'))
+    b.append(txt(36, 180, meta, size=10.5, fill='muted'))
     return svg(W, H, f'{name} - {" ".join(desc_lines)} '
                      + ', '.join(f'{l} {p}%' for l, p in langs) + f'. {meta}.',
                theme, ''.join(b))
@@ -326,12 +326,16 @@ def footer(theme):
 if __name__ == '__main__':
     repos = [
         ('mallard', 'Mallard',
-         ['A VS Code extension that tracks how much your AI',
-          'coding assistant is actually costing you.'],
+         ['A VS Code extension that tracks how much',
+          'your AI coding assistant costs you.'],
          DATA['langs']['Mallard'], f"{DATA['per_repo']['Mallard']} commits by me", 0),
+        ('burnt', 'burnt',
+         ['Static analysis for Databricks and Spark',
+          'pipelines - one code graph, 110 rules.'],
+         DATA['langs']['burnt'], f"{DATA['per_repo']['burnt']} commits by me", 1),
         ('grammar', 'tree-sitter-sql-extended',
-         ['A tree-sitter SQL grammar: an ANSI base plus 22',
-          'independently compiled dialects.'],
+         ['A tree-sitter SQL grammar: an ANSI base',
+          'plus 22 compiled dialects.'],
          DATA['langs']['tree-sitter-sql-extended'],
          f"{DATA['per_repo']['tree-sitter-sql-extended']} commits by me", 2),
     ]
