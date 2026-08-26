@@ -2,17 +2,17 @@
 <h3 align="center">Passionate about AI and all things tech</h3>
 
 <p align="center">
-  <img src="https://komarev.com/ghpvc/?username=RedPandaMC&label=Profile%20views&color=0e75b6&style=flat" alt="RedPandaMC" />
-  <img src="https://img.shields.io/github/followers/RedPandaMC?label=Followers" alt="RedPandaMC" />
-  <a href="https://github.com/RedPandaMC?tab=repositories" target="_blank">
-    <img src="https://img.shields.io/github/stars/RedPandaMC?label=Projects&style=social" alt="RedPandaMC" />
+  <img src="https://komarev.com/ghpvc/?username=RelativelyUnknown&label=Profile%20views&color=0e75b6&style=flat" alt="RelativelyUnknown" />
+  <img src="https://img.shields.io/github/followers/RelativelyUnknown?label=Followers" alt="RelativelyUnknown" />
+  <a href="https://github.com/RelativelyUnknown?tab=repositories" target="_blank">
+    <img src="https://img.shields.io/github/stars/RelativelyUnknown?label=Projects&style=social" alt="RelativelyUnknown" />
   </a> 
 </p>
 
 ---
 
 ### 🌟 About Me
-- 👨‍💻 All of my projects are available [here](https://github.com/RedPandaMC?tab=repositories)
+- 👨‍💻 All of my projects are available [here](https://github.com/RelativelyUnknown?tab=repositories)
 
 ### 📫 Connect with Me
 <p align="left">
