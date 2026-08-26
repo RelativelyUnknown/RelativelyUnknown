@@ -21,6 +21,12 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Discover owned and contributed repos
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd assets && python3 discover_repos.py
+
       - name: Clone source repositories
         run: |
           mkdir -p ../src
@@ -38,7 +44,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/data.json assets/*.svg assets/dark/*.svg
+          git add assets/repos.json assets/data.json assets/*.svg assets/dark/*.svg
           if git diff --cached --quiet; then
             echo "Nothing changed."
           else

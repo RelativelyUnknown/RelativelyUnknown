@@ -9,6 +9,11 @@ Every count here (total, per-repo, and the language split used to weight
 the Sankey) is windowed to the same last-52-weeks range, so they sum
 consistently: total == sum(per_repo.values()).
 
+The repo list itself lives in repos.json, not here - it's the ledger
+discover_repos.py maintains (owned repos + repos I've contributed to
+without owning), and it's also where each repo's Sankey hue is frozen
+once assigned. See hues.py.
+
 Usage:  python3 build_data.py ~/src        # dir holding the clones
 """
 import collections
@@ -19,21 +24,8 @@ import pathlib
 import subprocess
 import sys
 
-# Repos I own. Cloned as https://github.com/<owner>/<repo>.git
-OWNED = [
-    ('RelativelyUnknown', 'Mallard'),
-    ('RelativelyUnknown', 'burnt'),
-    ('RelativelyUnknown', 'tree-sitter-sql-extended'),
-    ('RelativelyUnknown', 'Hobby-SelfHostedHytaleServer'),
-    ('RelativelyUnknown', 'Jepa_Experiments'),
-    ('RelativelyUnknown', 'RelativelyUnknown'),
-]
-
-# Repos I've contributed to but don't own - add (owner, repo) pairs here.
-CONTRIBUTED = [
-]
-
-REPOS = OWNED + CONTRIBUTED
+HERE = pathlib.Path(__file__).resolve().parent
+REPOS = [(r['owner'], r['repo']) for r in json.loads((HERE / 'repos.json').read_text())['repos']]
 
 MINE = {'jurreandenys@gmail.com', '39960330+RedPandaMC@users.noreply.github.com'}
 NOT_ME = ('claude', 'dependabot', 'bot]')
@@ -102,7 +94,7 @@ def main(root):
     out = {'total': total, 'active_days': len(days), 'peak': max(days.values(), default=0),
            'start': start.isoformat(), 'end': end.isoformat(),
            'per_repo': dict(per_repo), 'langs': langs}
-    (pathlib.Path(__file__).resolve().parent / 'data.json').write_text(json.dumps(out))
+    (HERE / 'data.json').write_text(json.dumps(out))
     print(f'{start} -> {end}: {total} commits on {out["active_days"]} days')
     print('per repo:', dict(per_repo))
 

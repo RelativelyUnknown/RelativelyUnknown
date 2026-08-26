@@ -39,9 +39,12 @@ Numbers in data.json are measured, never asserted; rebuild with build_data.py.
 import json
 import pathlib
 
+from hues import repo_hex
+
 HERE = pathlib.Path(__file__).resolve().parent
 ICONS = json.loads((HERE / 'icons.json').read_text())
 DATA = json.loads((HERE / 'data.json').read_text())
+REPOS = json.loads((HERE / 'repos.json').read_text())['repos']
 
 # GitHub's own brand green (brand.github.com), light theme's hero step and a
 # brighter step from the same ramp for legibility on a dark canvas.
@@ -56,11 +59,11 @@ THEMES = {
                  muted='#8b949e', accent=GREEN_DARK),
 }
 
-# ---- GitHub Linguist language colours ------------------------------------
-LANG = {'Python': '#3572A5', 'Rust': '#dea584', 'TypeScript': '#3178c6',
-        'JavaScript': '#f1e05a', 'Go': '#00ADD8', 'C': '#555555', 'Vue': '#41b883',
-        'Shell': '#89e051', 'Scheme': '#1e4aec', 'SQL': '#e38c00', 'CSS': '#663399',
-        'HTML': '#e34c26', 'SCSS': '#c6538c'}
+# GitHub Linguist's own language colours (github.com/ozh/github-colors mirrors
+# the linguist languages.yml). A repo's hue in the Sankey, by contrast, is
+# assigned once and frozen in repos.json - see hues.py.
+LANG = json.loads((HERE / 'lang-colors.json').read_text())
+REPO_HUE = {r['repo']: r['hue'] for r in REPOS}
 
 SANS = "-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif"
 MONO = "ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace"
@@ -72,26 +75,6 @@ def esc(s):
 
 def accent(theme):
     return THEMES[theme]['accent']
-
-
-def hsl_hex(h, s, l):
-    c = (1 - abs(2 * l - 1)) * s
-    x = c * (1 - abs((h / 60) % 2 - 1))
-    m = l - c / 2
-    r, g, bl = [(c, x, 0), (x, c, 0), (0, c, x), (0, x, c), (x, 0, c), (c, 0, x)][int(h // 60) % 6]
-    return '#{:02x}{:02x}{:02x}'.format(*(round((v + m) * 255) for v in (r, g, bl)))
-
-
-def analogous(n, theme):
-    """n hues from an analogous range either side of GitHub's brand green (~132deg),
-    alternating lightness so neighbours stay visually distinct rather than blurring
-    into one green mass."""
-    if n <= 1:
-        return [accent(theme)]
-    lo, hi = 58, 206
-    s = 0.68 if theme == 'light' else 0.62
-    l0, l1 = (0.38, 0.5) if theme == 'light' else (0.6, 0.72)
-    return [hsl_hex(lo + (hi - lo) * i / (n - 1), s, l0 if i % 2 == 0 else l1) for i in range(n)]
 
 
 def txt(x, y, s, size=13, fill='fg', weight='400', anchor='start', family=SANS, cls=''):
@@ -313,7 +296,9 @@ def sankey(theme):
             pos[n['id']] = dict(x=x, y0=y, y1=y + h, col=ci, cursor_l=y, cursor_r=y, **n)
             y += h + node_gap
 
-    repo_colours = dict(zip((n['id'] for n in columns[1]), analogous(len(columns[1]), theme)))
+    # each repo's hue is frozen in repos.json (see hues.py) - never recomputed
+    # from sort order, so a repo's colour doesn't drift as commit counts shift.
+    repo_colours = {n['id']: repo_hex(REPO_HUE.get(n['id'], 132.0), theme) for n in columns[1]}
 
     subtitle = f'{DATA["total"]} commits, last 365 days -> repo -> language'
     b = [card(W, H)]
