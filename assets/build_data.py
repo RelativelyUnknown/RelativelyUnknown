@@ -44,17 +44,9 @@ def main(root):
                 per_repo[repo] += 1
 
     end = datetime.date.today()
-    end -= datetime.timedelta(days=(end.weekday() + 1) % 7)      # back to Sunday
-    start = end - datetime.timedelta(weeks=51)
-    grid = [[days.get((start + datetime.timedelta(weeks=w, days=d)).isoformat(), 0)
-             for d in range(7)] for w in range(52)]
-    total = sum(c for week in grid for c in week)
-
-    months = []
-    for w in range(52):
-        d = start + datetime.timedelta(weeks=w)
-        if d.day <= 7 and (not months or months[-1][1] != d.strftime('%b')):
-            months.append((w, d.strftime('%b')))
+    start = end - datetime.timedelta(weeks=52)
+    counts = [c for date, c in days.items() if start.isoformat() <= date <= end.isoformat()]
+    total = sum(counts)
 
     langs = {}
     for repo in REPOS[:3]:
@@ -75,10 +67,8 @@ def main(root):
         langs[repo] = [(l, round(v * 100 / tot, 1))
                        for l, v in sizes.most_common(4) if v * 100 / tot >= 1.0]
 
-    out = {'grid': grid, 'total': total,
-           'active_days': sum(1 for week in grid for c in week if c),
-           'peak': max((c for week in grid for c in week), default=0),
-           'start': start.isoformat(), 'end': end.isoformat(), 'months': months,
+    out = {'total': total, 'active_days': len(counts), 'peak': max(counts, default=0),
+           'start': start.isoformat(), 'end': end.isoformat(),
            'per_repo': dict(per_repo), 'langs': langs}
     (pathlib.Path(__file__).resolve().parent / 'data.json').write_text(json.dumps(out))
     print(f'{start} -> {end}: {total} commits on {out["active_days"]} days')
