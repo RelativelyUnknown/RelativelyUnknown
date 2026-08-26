@@ -1,0 +1,47 @@
+name: Refresh profile stats
+
+on:
+  schedule:
+    # 12:00 UTC daily.
+    - cron: '0 12 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout profile
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Clone source repositories
+        run: |
+          mkdir -p ../src
+          for repo in Mallard burnt tree-sitter-sql-extended RedPandaMC; do
+            git clone --quiet "https://github.com/${{ github.repository_owner }}/$repo.git" "../src/$repo" \
+              || echo "skip $repo (not found or private)"
+          done
+
+      - name: Rebuild data and SVGs
+        run: |
+          python3 assets/build_data.py ../src
+          python3 assets/generate.py
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/data.json assets/*.svg assets/dark/*.svg
+          if git diff --cached --quiet; then
+            echo "Nothing changed."
+          else
+            git commit -m "chore: refresh profile stats"
+            git push
+          fi

@@ -306,12 +306,10 @@ def footer(theme):
     b.append(f'<circle cx="38" cy="54" r="5" fill="{hs[1]}" class="pulse"/>')
     b.append(txt(56, 59, 'Open to talk about developer tooling, static analysis, '
                          'and anything AI-adjacent.', size=13.5))
-    b.append(screen(W - 428, 30, 96, 34, rx=7))
-    b.append(waveform(W - 420, 38, 80, 18, 'RelativelyUnknown/footer', hs[1]))
-    b.append(icon('oc', 'link-16', W - 244, 46, 16, hs[0]))
-    b.append(txt(W - 220, 59, 'linkedin.com/in/jurreandenys', size=13, fill=hs[0], weight='600'))
+    b.append(screen(W - 148, 30, 120, 34, rx=7))
+    b.append(waveform(W - 140, 38, 104, 18, 'RelativelyUnknown/footer', hs[1]))
     return svg(W, H, 'Open to talk about developer tooling, static analysis and anything '
-                     'AI-adjacent - linkedin.com/in/jurreandenys', theme, ''.join(b))
+                     'AI-adjacent.', theme, ''.join(b))
 
 
 if __name__ == '__main__':

@@ -8,4 +8,4 @@
 
 <picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/languages.svg"/><img src="assets/languages.svg" alt="Languages across every public non-fork repository: TypeScript 58.1%, Python 20.1%, Rust 17.5%, CSS 2.0%, JavaScript 1.0%, Shell 0.6%, Vue 0.4%." width="100%"/></picture>
 
-<a href="https://www.linkedin.com/in/jurreandenys/"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/footer.svg"/><img src="assets/footer.svg" alt="Open to talk about developer tooling, static analysis, and anything AI-adjacent — linkedin.com/in/jurreandenys" width="100%"/></picture></a>
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/footer.svg"/><img src="assets/footer.svg" alt="Open to talk about developer tooling, static analysis, and anything AI-adjacent." width="100%"/></picture>
