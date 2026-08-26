@@ -74,6 +74,23 @@ def accent(theme):
     return THEMES[theme]['accent']
 
 
+def hsl_hex(h, s, l):
+    c = (1 - abs(2 * l - 1)) * s
+    x = c * (1 - abs((h / 60) % 2 - 1))
+    m = l - c / 2
+    r, g, bl = [(c, x, 0), (x, c, 0), (0, c, x), (0, x, c), (x, 0, c), (c, 0, x)][int(h // 60) % 6]
+    return '#{:02x}{:02x}{:02x}'.format(*(round((v + m) * 255) for v in (r, g, bl)))
+
+
+def analogous(n, theme):
+    """n hues from an analogous range either side of GitHub's brand green (~132deg)."""
+    if n <= 1:
+        return [accent(theme)]
+    lo, hi = 92, 192
+    s, l = (0.6, 0.4) if theme == 'light' else (0.55, 0.66)
+    return [hsl_hex(lo + (hi - lo) * i / (n - 1), s, l) for i in range(n)]
+
+
 def txt(x, y, s, size=13, fill='fg', weight='400', anchor='start', family=SANS, cls=''):
     c = f' class="{cls}"' if cls else ''
     f = fill if fill.startswith('#') else f'var(--{fill})'
@@ -293,6 +310,8 @@ def sankey(theme):
             pos[n['id']] = dict(x=x, y0=y, y1=y + h, col=ci, cursor_l=y, cursor_r=y, **n)
             y += h + node_gap
 
+    repo_colours = dict(zip((n['id'] for n in columns[1]), analogous(len(columns[1]), theme)))
+
     subtitle = f'{DATA["total"]} commits, last 365 days -> repo -> language'
     b = [card(W, H)]
     b.append(f'<g class="rise">{txt(28, 32, "Commit flow", size=15, weight="600")}'
@@ -308,8 +327,9 @@ def sankey(theme):
         xm = (x0 + x1) / 2
         d = (f'M{x0:.1f},{sy:.1f} C{xm:.1f},{sy:.1f} {xm:.1f},{ty:.1f} {x1:.1f},{ty:.1f} '
              f'L{x1:.1f},{ty + h:.1f} C{xm:.1f},{ty + h:.1f} {xm:.1f},{sy + h:.1f} {x0:.1f},{sy + h:.1f} Z')
-        fill = ac if src == 'commits' else 'var(--muted)'
-        op = 0.22 if src == 'commits' else 0.14
+        # coloured by whichever repo the flow belongs to, on both hops
+        fill = repo_colours[tgt] if src == 'commits' else repo_colours[src]
+        op = 0.4 if src == 'commits' else 0.28
         b.append(f'<path d="{d}" fill="{fill}" fill-opacity="{op}" class="rise" '
                  f'style="animation-delay:{.15 + i * .02:.2f}s"/>')
 
@@ -317,7 +337,12 @@ def sankey(theme):
         for n in col:
             p = pos[n['id']]
             h = p['y1'] - p['y0']
-            fill = ac if n['id'] == 'commits' else 'var(--muted)'
+            if n['id'] == 'commits':
+                fill = ac
+            elif n['id'] in repo_colours:
+                fill = repo_colours[n['id']]
+            else:
+                fill = 'var(--muted)'
             delay = .05 if p['col'] == 0 else .15 + p['col'] * .1
             b.append(f'<g class="rise" style="animation-delay:{delay:.2f}s">')
             b.append(f'<rect x="{p["x"]:.1f}" y="{p["y0"]:.1f}" width="{node_w}" '
