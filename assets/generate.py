@@ -1,20 +1,23 @@
 #!/usr/bin/env python3
 """Generate the SVG blocks for the RelativelyUnknown profile README.
 
-GitHub's bones, OP-1's screens.
+GitHub's bones, a terminal's texture.
 
   Structure is Primer: bordered cards, rounded corners, muted secondary
   text, repo pins, a language bar, Octicons. It should feel native to
-  github.com. But wherever there is a number to show, it sits inside a
-  small dark module screen - a flat coloured icon, a tracked capital
-  label, a bold value in the same colour - the way Teenage Engineering's
-  OP-1 shows a parameter: one screen, one colour, one number, no bezel,
-  no gradient, no drop shadow. Flat colour blocks only.
+  github.com first. But every number sits inside a small dark module
+  screen, prompts are prefixed like a shell ("$ whoami"), and colour is
+  never a flat fill where a halftone can stand in for it instead - an
+  ordered dither, the way a low-colour terminal or a printed dot-gradient
+  fakes a tone it doesn't have. Screens get faint scanlines. It's GitHub
+  with an ASCII accent, not an ASCII page - most of the type is still
+  plain sans, most of the chrome is still a bordered card.
 
-  Colour is not Primer. The five saturated hues come from the palette
-  sheet in the reference board, so the accents and the card edges are
-  the owner's, not GitHub's blue-and-green. Module screens are always
-  dark, light theme or dark, because a screen is a screen.
+  Colour is not Primer. The five hues come from the palette sheet in the
+  reference board, but they show up sparingly now - a dithered strip, a
+  thin edge, a single accent tick - not as the loudest thing on the page.
+  Module screens are always dark, light theme or dark, because a screen
+  is a screen.
 
 Every block is emitted light and dark; the README picks with <picture>
 media="(prefers-color-scheme: dark)", the only image theming GitHub honours.
@@ -43,6 +46,10 @@ HUES_DARK = ['#4C8DFF', '#3DE8A0', '#FF7355', '#FFE066', '#FF95E4']
 # a module screen is always this dark, in either site theme - it's a screen
 SCREEN_BG = '#12141A'
 SCREEN_MUTED = '#828B99'
+SCREEN_FG = '#E8EAED'
+
+# ordered dithering: a 4x4 Bayer matrix, used to fake a tone out of one flat colour
+BAYER4 = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]
 
 THEMES = {
     'light': dict(canvas='#ffffff', subtle='#FBF9F4', border='#E4DFD3', fg='#1B1D1C',
@@ -111,6 +118,31 @@ def screen(x, y, w, h, rx=8):
     return rect(x, y, w, h, SCREEN_BG, rx=rx)
 
 
+def dither(x, y, w, h, cell, colour, density=0.6, fill_frac=0.72):
+    """An ordered-dither patch: a flat colour faked as a halftone, Bayer-matrix style."""
+    cols, rows = max(1, round(w / cell)), max(1, round(h / cell))
+    s = cell * fill_frac
+    out = []
+    for r in range(rows):
+        for c in range(cols):
+            t = (BAYER4[r % 4][c % 4] + 0.5) / 16
+            if density > t:
+                cx, cy = x + c * cell + cell / 2, y + r * cell + cell / 2
+                out.append(f'<rect x="{cx - s / 2:.1f}" y="{cy - s / 2:.1f}" '
+                           f'width="{s:.1f}" height="{s:.1f}" fill="{colour}"/>')
+    return ''.join(out)
+
+
+def scanlines(x, y, w, h, gap=4, colour='#ffffff', opacity=0.045):
+    """Faint horizontal lines across a screen - the CRT texture a module display carries."""
+    out, yy = [], y + gap
+    while yy < y + h:
+        out.append(f'<line x1="{x}" y1="{yy:.1f}" x2="{x + w}" y2="{yy:.1f}" '
+                   f'stroke="{colour}" stroke-width="1" opacity="{opacity}"/>')
+        yy += gap
+    return ''.join(out)
+
+
 def style(theme):
     t = THEMES[theme]
     v = ';'.join(f'--{k}:{val}' for k, val in t.items())
@@ -144,36 +176,32 @@ def write(name, theme, content):
     (d / name).write_text(content)
 
 
-def colour_bar(x, y, w, theme, h=6, delay=0.0, rx=2):
-    """The owner's signature five-segment bar, wiping in left to right."""
+def colour_bar(x, y, w, theme, h=9, delay=0.0):
+    """The owner's signature five-segment bar - dithered halftone, not a flat fill."""
     widths = [0.30, 0.16, 0.24, 0.13, 0.17]
     out, off = [], 0.0
     for i, frac in enumerate(widths):
         seg = w * frac
-        out.append(f'<rect x="{x + off:.1f}" y="{y}" width="{seg - 4:.1f}" height="{h}" '
-                   f'rx="{rx}" fill="{hues(theme)[i]}" class="seg" '
-                   f'style="transform-origin:{x + off:.1f}px 0;'
-                   f'animation-delay:{delay + i * .09:.2f}s"/>')
+        dots = dither(x + off, y, seg - 4, h, cell=2.3, colour=hues(theme)[i], density=0.62)
+        out.append(f'<g class="seg" style="transform-origin:{x + off:.1f}px {y}px;'
+                   f'animation-delay:{delay + i * .09:.2f}s">{dots}</g>')
         off += seg
     return ''.join(out)
 
 
-def stat_module(x, y, w, h, shape, value, cap_text, hue, delay=0.0):
-    """One OP-1-style parameter screen: an icon chip, a tracked label, a bold value."""
-    b = [screen(x, y, w, h)]
-    icx, icy = x + 15, y + 17
-    if shape == 'circle':
-        b.append(f'<circle cx="{icx}" cy="{icy}" r="5" fill="{hue}"/>')
-    else:
-        b.append(f'<rect x="{icx - 5}" y="{icy - 5}" width="10" height="10" rx="2.5" fill="{hue}"/>')
-    b.append(cap(x + 26, icy + 3, cap_text))
-    b.append(txt(x + 14, y + h - 15, value, size=27, weight='800', fill=hue))
+def stat_module(x, y, w, h, value, cap_text, hue, delay=0.0):
+    """A terminal-style parameter readout: a dithered icon, a tracked label, a mono value."""
+    b = [screen(x, y, w, h), scanlines(x + 3, y + 3, w - 6, h - 6)]
+    b.append(dither(x + 10, y + 11, 12, 12, cell=3, colour=hue, density=0.72))
+    b.append(cap(x + 29, y + 20, cap_text))
+    b.append(txt(x + 13, y + h - 15, value, size=25, weight='700', fill=SCREEN_FG, family=MONO))
+    b.append(rect(x + 13, y + h - 9, 20, 3, hue))
     return f'<g class="rise" style="animation-delay:{delay:.2f}s">{"".join(b)}</g>'
 
 
 def lang_screen(x, y, w, h, langs, delay=0.0):
     """A module readout of a repo's language mix - one row per language, Linguist colours."""
-    b = [screen(x, y, w, h)]
+    b = [screen(x, y, w, h), scanlines(x + 3, y + 3, w - 6, h - 6)]
     rh = h / len(langs)
     for i, (name, pct) in enumerate(langs):
         ry = y + rh * i + rh / 2 + 3
@@ -207,30 +235,29 @@ def header(theme):
     W, H = 1000, 252
     hs = hues(theme)
     b = [card(W, H)]
-    b.append(f'<g class="rise">{cap(28, 24, "Developer profile", fill="muted")}</g>')
+    b.append(f'<g class="rise">{txt(28, 24, "$ whoami", size=11, fill="muted", family=MONO, sp="0.03em")}</g>')
     b.append(f'<g class="rise" style="animation-delay:.05s">'
              f'{txt(28, 60, "RelativelyUnknown", size=30, weight="800")}</g>')
     b.append(f'<g class="rise" style="animation-delay:.09s">'
              f'{txt(28, 85, "Data and AI engineering", size=14.5, fill="muted")}</g>')
-    b.append(colour_bar(28, 99, 300, theme, h=6, delay=.16))
+    b.append(colour_bar(28, 100, 300, theme, delay=.16))
     b.append(f'<g class="rise" style="animation-delay:.15s">'
-             f'{txt(28, 133, "I build tools that sit close to the code - static analysis,", size=14)}'
-             f'{txt(28, 155, "language grammars, and the editor surfaces around them.", size=14)}</g>')
+             f'{txt(28, 138, "I build tools that sit close to the code - static analysis,", size=14)}'
+             f'{txt(28, 160, "language grammars, and the editor surfaces around them.", size=14)}</g>')
 
-    for i, (ic, lab) in enumerate([('code-16', 'TypeScript, Python and Rust'),
-                                    ('repo-16', '6 public repositories')]):
-        y = 185 + i * 24
+    for i, lab in enumerate(['$ stack   typescript, python, rust',
+                              '$ repos   6 public']):
+        y = 188 + i * 22
         b.append(f'<g class="rise" style="animation-delay:{.22 + i * .06:.2f}s">'
-                 f'{icon("oc", ic, 28, y - 12, 14, hs[i])}'
-                 f'{txt(50, y, lab, size=13, fill="muted")}</g>')
+                 f'{txt(28, y, lab, size=12, fill="muted", family=MONO)}</g>')
 
-    mods = [(str(DATA['total']), 'commits', 'square'),
-            (str(DATA['active_days']), 'active days', 'circle'),
-            (str(DATA['peak']), 'best day', 'square')]
+    mods = [(str(DATA['total']), 'commits'),
+            (str(DATA['active_days']), 'active days'),
+            (str(DATA['peak']), 'best day')]
     mw, gap, mx = 118, 13, 592
-    for i, (val, lab, shape) in enumerate(mods):
+    for i, (val, lab) in enumerate(mods):
         x = mx + i * (mw + gap)
-        b.append(stat_module(x, 64, mw, 156, shape, val, lab, hs[i], delay=.28 + i * .08))
+        b.append(stat_module(x, 64, mw, 156, val, lab, hs[i], delay=.28 + i * .08))
     return svg(W, H, 'RelativelyUnknown - data and AI engineering. I build tools that sit close '
                      'to the code: static analysis, language grammars, and the editor surfaces '
                      f'around them. TypeScript, Python and Rust. {DATA["total"]} commits in the '
@@ -245,7 +272,8 @@ def header(theme):
 def repo_card(theme, name, desc_lines, langs, meta, hue_i):
     W, H = 326, 196
     hue = hues(theme)[hue_i]
-    b = [card(W, H), rect(8, 0.5, W - 16, 4, hue, rx=2)]
+    b = [card(W, H)]
+    b.append(dither(8, 1, W - 16, 4, cell=2, colour=hue, density=0.68))
     b.append(icon('oc', 'repo-16', 20, 29, 15, hue))
     b.append(txt(44, 41, name, size=13, weight='600'))
     b.append(rect(W - 76, 27, 58, 19, None, 'border', rx=9))
@@ -271,9 +299,9 @@ def languages(theme):
     b = [card(W, H)]
     b.append(icon('oc', 'code-16', 28, 32, 16, hues(theme)[0]))
     b.append(txt(52, 45, 'Languages', size=15, weight='600'))
-    b.append(txt(W - 28, 45, f'{DATA["lang_repos"]} public repositories, '
-                             f'{DATA["lang_bytes"] / 1e6:.1f} MB of source',
-                 size=12, fill='muted', anchor='end'))
+    b.append(txt(W - 28, 45, f'$ {DATA["lang_repos"]} public repos, '
+                             f'{DATA["lang_bytes"] / 1e6:.1f} MB source',
+                 size=11.5, fill='muted', anchor='end', family=MONO))
 
     total = sum(p for _, p in langs) or 1
     bw, off = W - 56, 0.0
@@ -302,12 +330,13 @@ def languages(theme):
 def footer(theme):
     W, H = 1000, 94
     hs = hues(theme)
-    b = [card(W, H), colour_bar(8, 0.5, W - 16, theme, h=4, delay=0, rx=2)]
+    b = [card(W, H), colour_bar(8, 1, W - 16, theme, h=7, delay=0)]
     b.append(f'<circle cx="38" cy="54" r="5" fill="{hs[1]}" class="pulse"/>')
     b.append(txt(56, 59, 'Open to talk about developer tooling, static analysis, '
                          'and anything AI-adjacent.', size=13.5))
     b.append(screen(W - 148, 30, 120, 34, rx=7))
-    b.append(waveform(W - 140, 38, 104, 18, 'RelativelyUnknown/footer', hs[1]))
+    b.append(scanlines(W - 145, 33, 114, 28))
+    b.append(waveform(W - 140, 38, 104, 18, 'RelativelyUnknown/footer', 'var(--muted)'))
     return svg(W, H, 'Open to talk about developer tooling, static analysis and anything '
                      'AI-adjacent.', theme, ''.join(b))
 
