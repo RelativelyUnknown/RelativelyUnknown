@@ -29,6 +29,8 @@ flowchart LR
   classDef out fill:#9a670022,stroke:#9a6700,color:#9a6700
 ```
 
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/languages.svg"/><img src="assets/languages.svg" alt="Languages across every non-fork repository: TypeScript 56.6%, Python 28.4%, Rust 9.2%, CSS 1.7%, HTML 1.5%, JavaScript 1.3%." width="100%"/></picture>
+
 <picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/stack.svg"/><img src="assets/stack.svg" alt="Stack: Python, Rust, TypeScript, Go, C; PyTorch, TensorFlow, scikit-learn, pandas, NumPy; Spark, Databricks, PostgreSQL, MySQL, Grafana; Docker, Kubernetes, Linux, Git, GitHub Actions." width="100%"/></picture>
 
 <a href="https://www.linkedin.com/in/jurreandenys/"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/footer.svg"/><img src="assets/footer.svg" alt="Open to talk about developer tooling, static analysis, and anything AI-adjacent — linkedin.com/in/jurreandenys" width="100%"/></picture></a>

@@ -255,8 +255,8 @@ def activity(theme):
 # =====================================================================
 def stack(theme):
     groups = [
-        ('Languages', [('Python', 'python'), ('Rust', 'rust'), ('TypeScript', 'typescript'),
-                       ('Go', 'go'), ('C', 'c')]),
+        ('Languages', [('TypeScript', 'typescript'), ('Python', 'python'), ('Rust', 'rust'),
+                       ('JavaScript', 'javascript'), ('SQL', 'postgresql')]),
         ('Data and models', [('PyTorch', 'pytorch'), ('TensorFlow', 'tensorflow'),
                              ('scikit-learn', 'scikitlearn'), ('pandas', 'pandas'),
                              ('NumPy', 'numpy')]),
@@ -286,10 +286,44 @@ def stack(theme):
                      f'{icon("si", slug, x + 12, y + 11, 18, brand(slug, theme))}'
                      f'{txt(x + 40, y + 25, label, size=12.5, weight="500")}</g>')
             n += 1
-    return svg(W, H, 'Stack: Python, Rust, TypeScript, Go, C; PyTorch, TensorFlow, '
+    return svg(W, H, 'Stack: TypeScript, Python, Rust, JavaScript, SQL; PyTorch, TensorFlow, '
                      'scikit-learn, pandas, NumPy; Spark, Databricks, PostgreSQL, MySQL, '
                      'Grafana; Docker, Kubernetes, Linux, Git, GitHub Actions.',
                theme, ''.join(b))
+
+
+# =====================================================================
+# LANGUAGES - measured across every non-fork repository
+# =====================================================================
+def languages(theme):
+    langs = DATA['overall_langs']
+    W, H = 1000, 150
+    b = [card(W, H)]
+    b.append(icon('oc', 'code-16', 28, 32, 16, 'muted'))
+    b.append(txt(52, 45, 'Languages', size=15, weight='600'))
+    b.append(txt(W - 28, 45, f'{DATA["lang_repos"]} repositories, '
+                             f'{DATA["lang_bytes"] / 1e6:.1f} MB of source',
+                 size=12, fill='muted', anchor='end'))
+
+    total = sum(p for _, p in langs) or 1
+    bw, off = W - 56, 0.0
+    b.append('<g transform="translate(28,70)">')
+    for name, pct in langs:
+        seg = bw * pct / total
+        b.append(f'<rect x="{off:.1f}" y="0" width="{max(seg - 2, 2):.1f}" height="10" rx="5" '
+                 f'fill="{LANG.get(name, "#8b949e")}" class="bar" '
+                 f'style="transform-origin:{off:.1f}px 0"/>')
+        off += seg
+    b.append('</g>')
+
+    for i, (name, pct) in enumerate(langs[:6]):
+        x = 28 + i * 162
+        b.append(f'<g class="rise" style="animation-delay:{.3 + i * .05:.2f}s">'
+                 f'<circle cx="{x + 5}" cy="106" r="5" fill="{LANG.get(name, "#8b949e")}"/>'
+                 f'{txt(x + 17, 110, name, size=12, weight="500")}'
+                 f'{txt(x + 17, 128, f"{pct}%", size=11.5, fill="muted", family=MONO)}</g>')
+    return svg(W, H, 'Languages across every non-fork repository: '
+                     + ', '.join(f'{n} {p}%' for n, p in langs), theme, ''.join(b))
 
 
 # =====================================================================
@@ -328,6 +362,7 @@ if __name__ == '__main__':
         for slug, name, desc, langs, meta in repos:
             write(f'repo-{slug}.svg', theme, repo_card(theme, name, desc, langs, meta))
         write('activity.svg', theme, activity(theme))
+        write('languages.svg', theme, languages(theme))
         write('stack.svg', theme, stack(theme))
         write('footer.svg', theme, footer(theme))
     n = len(list(HERE.glob('*.svg'))) + len(list((HERE / 'dark').glob('*.svg')))
