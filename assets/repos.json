@@ -41,6 +41,20 @@
       "relation": "owner",
       "hue": 150.5,
       "first_seen": "2026-08-26"
+    },
+    {
+      "owner": "RelativelyUnknown",
+      "repo": "Hobby-VideoEditingTool",
+      "relation": "owner",
+      "hue": 187.5,
+      "first_seen": "2026-08-26"
+    },
+    {
+      "owner": "RelativelyUnknown",
+      "repo": "Netl",
+      "relation": "owner",
+      "hue": 67.2,
+      "first_seen": "2026-08-26"
     }
   ]
 }
