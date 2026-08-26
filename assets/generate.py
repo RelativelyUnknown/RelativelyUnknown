@@ -1,15 +1,28 @@
 #!/usr/bin/env python3
 """Generate the SVG blocks for the RelativelyUnknown profile README.
 
-GitHub's bones, wearing a different coat.
+Plain GitHub, one brand colour.
 
-  Structure is Primer: bordered cards, small radii, muted secondary text,
-  repo pins, language bars, a contribution heatmap, Octicons. It should
-  feel native to github.com.
+  Structure and colour are both Primer now: bordered cards at Primer's own
+  radius, the real neutral tokens (#d0d7de / #30363d borders, not a custom
+  palette), plain Octicons, a repo pin's actual "Public" pill. No dithering,
+  no terminal prompts, no dark module screens - those were fun but they
+  weren't GitHub.
 
-  Colour is not Primer. The five saturated hues come from the palette
-  sheet in the reference board, so the accents, the heatmap ramp and the
-  card edges are the owner's, not GitHub's blue-and-green.
+  The one colour anywhere is GitHub's own brand green (from
+  brand.github.com's published palette), used the way GitHub itself uses
+  it: sparingly, as a status dot and a couple of small icons, never as a
+  wash. Every language colour you see is Linguist's, because that's
+  GitHub's own convention for a repo's language bar, not a decorative
+  choice.
+
+  The languages block is gone. In its place: a Sankey built from the same
+  measured data - commits, per repo, into that repo's language split -
+  hand-laid-out as one more generated SVG, no charting library. It only
+  works because build_data.py windows every count (total, per-repo,
+  language weighting) to the same last-52-weeks range, so the numbers
+  actually conserve: total == sum of the repo nodes == sum of the
+  language nodes.
 
 Every block is emitted light and dark; the README picks with <picture>
 media="(prefers-color-scheme: dark)", the only image theming GitHub honours.
@@ -19,7 +32,6 @@ README HTML but keeps it inside an SVG loaded as an image. Everything is
 guarded by prefers-reduced-motion.
 
 Third-party artwork, vendored as path data in icons.json:
-  Simple Icons    - CC0-1.0   https://github.com/simple-icons/simple-icons
   Primer Octicons - MIT       https://github.com/primer/octicons
 
 Numbers in data.json are measured, never asserted; rebuild with build_data.py.
@@ -27,28 +39,31 @@ Numbers in data.json are measured, never asserted; rebuild with build_data.py.
 import json
 import pathlib
 
+from hues import repo_hex
+
 HERE = pathlib.Path(__file__).resolve().parent
 ICONS = json.loads((HERE / 'icons.json').read_text())
 DATA = json.loads((HERE / 'data.json').read_text())
+REPOS = json.loads((HERE / 'repos.json').read_text())['repos']
 
-# ---- the owner's five hues, from the reference palette sheet -------------
-HUES = ['#1569FF', '#31DB92', '#FF5831', '#FFD93B', '#FF7BDD']
-HUES_DARK = ['#4C8DFF', '#3DE8A0', '#FF7355', '#FFE066', '#FF95E4']
+# GitHub's own brand green (brand.github.com), light theme's hero step and a
+# brighter step from the same ramp for legibility on a dark canvas.
+GREEN = '#0FBF3E'
+GREEN_DARK = '#5FED83'
 
+# GitHub's real Primer neutrals - not a custom palette.
 THEMES = {
-    'light': dict(canvas='#ffffff', subtle='#FBF9F4', border='#E4DFD3', fg='#1B1D1C',
-                  muted='#6B716D',
-                  heat=['#F0EBE0', '#FFE9A3', '#FFC44D', '#FF7A45', '#E8365E']),
-    'dark': dict(canvas='#0d1117', subtle='#161B22', border='#30363D', fg='#F0F6FC',
-                 muted='#9198A1',
-                 heat=['#191D24', '#4A3A0F', '#B8721A', '#FF5831', '#FF95E4']),
+    'light': dict(canvas='#ffffff', subtle='#f6f8fa', border='#d0d7de', fg='#1f2328',
+                  muted='#656d76', accent=GREEN),
+    'dark': dict(canvas='#0d1117', subtle='#161b22', border='#30363d', fg='#e6edf3',
+                 muted='#8b949e', accent=GREEN_DARK),
 }
 
-# ---- GitHub Linguist language colours ------------------------------------
-LANG = {'Python': '#3572A5', 'Rust': '#dea584', 'TypeScript': '#3178c6',
-        'JavaScript': '#f1e05a', 'Go': '#00ADD8', 'C': '#555555', 'Vue': '#41b883',
-        'Shell': '#89e051', 'Scheme': '#1e4aec', 'SQL': '#e38c00', 'CSS': '#663399',
-        'HTML': '#e34c26', 'SCSS': '#c6538c'}
+# GitHub Linguist's own language colours (github.com/ozh/github-colors mirrors
+# the linguist languages.yml). A repo's hue in the Sankey, by contrast, is
+# assigned once and frozen in repos.json - see hues.py.
+LANG = json.loads((HERE / 'lang-colors.json').read_text())
+REPO_HUE = {r['repo']: r['hue'] for r in REPOS}
 
 SANS = "-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif"
 MONO = "ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace"
@@ -58,8 +73,8 @@ def esc(s):
     return s.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
 
 
-def hues(theme):
-    return HUES_DARK if theme == 'dark' else HUES
+def accent(theme):
+    return THEMES[theme]['accent']
 
 
 def txt(x, y, s, size=13, fill='fg', weight='400', anchor='start', family=SANS, cls=''):
@@ -69,14 +84,15 @@ def txt(x, y, s, size=13, fill='fg', weight='400', anchor='start', family=SANS, 
             f'font-weight="{weight}" fill="{f}" text-anchor="{anchor}"{c}>{esc(s)}</text>')
 
 
-def rect(x, y, w, h, fill=None, stroke=None, rx=0, sw=1, cls=''):
+def rect(x, y, w, h, fill=None, stroke=None, rx=0, sw=1, cls='', op=None):
     f = 'none' if fill is None else (fill if fill.startswith('#') else f'var(--{fill})')
     s = ''
     if stroke:
         sv = stroke if stroke.startswith('#') else f'var(--{stroke})'
         s = f' stroke="{sv}" stroke-width="{sw}"'
     c = f' class="{cls}"' if cls else ''
-    return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" fill="{f}"{s}{c}/>'
+    o = f' fill-opacity="{op}"' if op is not None else ''
+    return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" fill="{f}"{s}{c}{o}/>'
 
 
 def icon(kind, name, x, y, size, colour):
@@ -88,16 +104,15 @@ def icon(kind, name, x, y, size, colour):
     return f'<g transform="translate({x},{y}) scale({scale:.5f})" fill="{f}">{paths}</g>'
 
 
-def card(w, h):
-    return rect(0.5, 0.5, w - 1, h - 1, 'canvas', 'border', rx=8)
+def card(w, h, rx=6):
+    return rect(0.5, 0.5, w - 1, h - 1, 'canvas', 'border', rx=rx)
 
 
 def style(theme):
     t = THEMES[theme]
-    v = ';'.join(f'--{k}:{val}' for k, val in t.items() if k != 'heat')
-    heat = ';'.join(f'--h{i}:{c}' for i, c in enumerate(t['heat']))
+    v = ';'.join(f'--{k}:{val}' for k, val in t.items())
     return ('<style>'
-            f'svg{{{v};{heat}}}'
+            f'svg{{{v}}}'
             # the resting state of every animated element is VISIBLE. The motion
             # lives entirely in the keyframes, with fill-mode both, so a block
             # whose animation never starts - browsers defer them for off-screen
@@ -107,20 +122,16 @@ def style(theme):
             'to{opacity:1;transform:none}}'
             '.bar{animation:grow 1s cubic-bezier(.2,.75,.2,1) both}'
             '@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}'
-            '.seg{animation:grow .7s cubic-bezier(.2,.75,.2,1) both}'
-            '.cell{animation:pop .42s cubic-bezier(.3,1.5,.5,1) both}'
-            '@keyframes pop{from{opacity:0;transform:scale(.35)}'
-            'to{opacity:1;transform:scale(1)}}'
             '.pulse{animation:pulse 2.4s ease-in-out infinite}'
             '@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}'
             '@media (prefers-reduced-motion:reduce){'
-            '.rise,.bar,.cell,.seg,.pulse{animation:none;opacity:1;transform:none}}'
+            '.rise,.bar,.pulse{animation:none;opacity:1;transform:none}}'
             '</style>')
 
 
-def svg(w, h, label, theme, body):
+def svg(w, h, label_, theme, body):
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" '
-            f'height="{h}" role="img" aria-label="{esc(label)}">{style(theme)}{body}</svg>\n')
+            f'height="{h}" role="img" aria-label="{esc(label_)}">{style(theme)}{body}</svg>\n')
 
 
 def write(name, theme, content):
@@ -129,198 +140,232 @@ def write(name, theme, content):
     (d / name).write_text(content)
 
 
-def colour_bar(x, y, w, theme, h=6, delay=0.0, rx=None):
-    """The owner's signature five-segment bar, wiping in left to right."""
-    widths = [0.30, 0.16, 0.24, 0.13, 0.17]
-    out, off = [], 0.0
-    for i, frac in enumerate(widths):
-        seg = w * frac
-        out.append(f'<rect x="{x + off:.1f}" y="{y}" width="{seg - 4:.1f}" height="{h}" '
-                   f'rx="{rx if rx is not None else h / 2}" fill="{hues(theme)[i]}" class="seg" '
-                   f'style="transform-origin:{x + off:.1f}px 0;'
-                   f'animation-delay:{delay + i * .09:.2f}s"/>')
-        off += seg
-    return ''.join(out)
-
-
 # =====================================================================
 # HEADER
 # =====================================================================
 def header(theme):
-    W, H = 1000, 252
-    hs = hues(theme)
+    W, H = 1000, 224
+    ac = accent(theme)
     b = [card(W, H)]
-    b.append(f'<g class="rise">{txt(28, 66, "RelativelyUnknown", size=32, weight="700")}</g>')
-    b.append(f'<g class="rise" style="animation-delay:.07s">'
-             f'{txt(28, 93, "Data and AI engineering", size=15, fill="muted")}</g>')
-    b.append(colour_bar(28, 108, 300, theme, h=6, delay=.15))
-    b.append(f'<g class="rise" style="animation-delay:.14s">'
-             f'{txt(28, 152, "I build tools that sit close to the code - static analysis,", size=14)}'
-             f'{txt(28, 174, "language grammars, and the editor surfaces around them.", size=14)}</g>')
+    b.append(f'<g class="rise"><circle cx="32" cy="21" r="3.5" fill="{ac}"/>'
+             f'{txt(42, 25, "Developer profile", size=11.5, fill="muted")}</g>')
+    b.append(f'<g class="rise" style="animation-delay:.05s">'
+             f'{txt(28, 62, "RelativelyUnknown", size=28, weight="700")}</g>')
+    b.append(f'<g class="rise" style="animation-delay:.09s">'
+             f'{txt(28, 86, "Data and AI engineering", size=14, fill="muted")}</g>')
+    b.append(f'<g class="rise" style="animation-delay:.13s">'
+             f'{txt(28, 122, "I build tools that sit close to the code - static analysis,", size=14)}'
+             f'{txt(28, 144, "language grammars, and the editor surfaces around them.", size=14)}</g>')
 
-    for i, (ic, label, y) in enumerate([('code-16', 'TypeScript / Python / Rust', 212),
-                                        ('repo-16', '6 public repositories', 236)]):
+    for i, (ic, lab) in enumerate([('code-16', 'TypeScript, Python and Rust'),
+                                    ('repo-16', '6 public repositories')]):
+        y = 174 + i * 24
         b.append(f'<g class="rise" style="animation-delay:{.2 + i * .06:.2f}s">'
-                 f'{icon("oc", ic, 28, y - 12, 15, hs[i])}'
-                 f'{txt(52, y, label, size=13, fill="muted")}</g>')
+                 f'{icon("oc", ic, 28, y - 12, 14, ac)}'
+                 f'{txt(50, y, lab, size=13, fill="muted")}</g>')
 
     stats = [(str(DATA['total']), 'commits, last year'),
-             (str(DATA['active_days']), 'days with commits'),
-             (str(DATA['peak']), 'on the busiest day')]
+             (str(DATA['active_days']), 'active days'),
+             (str(DATA['peak']), 'best day')]
+    sx, sw = 592, 380
     for i, (n, lab) in enumerate(stats):
-        y = 90 + i * 52
-        b.append(f'<g class="rise" style="animation-delay:{.26 + i * .08:.2f}s">'
-                 f'{rect(600, y - 28, 372, 42, "subtle", "border", rx=7)}'
-                 f'{rect(600, y - 28, 4, 42, hs[i])}'
-                 f'{txt(620, y, n, size=18, weight="700", family=MONO)}'
-                 f'{txt(956, y, lab, size=12, fill="muted", anchor="end")}</g>')
+        x = sx + i * (sw / 3)
+        if i:
+            b.append(f'<line x1="{x:.0f}" y1="80" x2="{x:.0f}" y2="180" stroke="var(--border)"/>')
+        cx = x + sw / 6
+        b.append(f'<g class="rise" style="animation-delay:{.28 + i * .08:.2f}s">'
+                 f'{txt(cx, 128, n, size=30, weight="700", anchor="middle")}'
+                 f'{txt(cx, 154, lab, size=11.5, fill="muted", anchor="middle")}</g>')
     return svg(W, H, 'RelativelyUnknown - data and AI engineering. I build tools that sit close '
                      'to the code: static analysis, language grammars, and the editor surfaces '
                      f'around them. TypeScript, Python and Rust. {DATA["total"]} commits in the '
-                     f'last year across 6 public repositories, on {DATA["active_days"]} days, '
-                     f'peaking at {DATA["peak"]} in one day.',
+                     f'last year across 6 public repositories, on {DATA["active_days"]} active '
+                     f'days, peaking at {DATA["peak"]} in one day.',
                theme, ''.join(b))
 
 
 # =====================================================================
 # REPO CARDS
 # =====================================================================
-def repo_card(theme, name, desc_lines, langs, meta, hue_i):
-    W, H = 326, 188
-    hue = hues(theme)[hue_i]
-    b = [card(W, H), rect(8, 0.5, W - 16, 4, hue, rx=2)]
-    b.append(icon('oc', 'repo-16', 20, 29, 15, hue))
-    b.append(txt(44, 41, name, size=13, weight='600'))
-    b.append(rect(W - 76, 27, 58, 19, None, 'border', rx=10))
-    b.append(txt(W - 47, 40, 'Public', size=10.5, fill='muted', anchor='middle'))
+def repo_card(theme, name, desc_lines, langs, meta):
+    W, H = 326, 190
+    ac = accent(theme)
+    b = [card(W, H), rect(8, 0.5, W - 16, 3, ac, rx=1.5)]
+    b.append(icon('oc', 'repo-16', 20, 26, 15, ac))
+    b.append(txt(44, 38, name, size=13, weight='600'))
+    b.append(rect(W - 76, 24, 58, 19, None, 'border', rx=9))
+    b.append(txt(W - 47, 37, 'Public', size=10.5, fill='muted', anchor='middle'))
     for i, ln in enumerate(desc_lines):
-        b.append(txt(20, 72 + i * 17, ln, size=11.5, fill='muted'))
+        b.append(txt(20, 68 + i * 17, ln, size=11.5, fill='muted'))
 
     total = sum(p for _, p in langs) or 1
     bw, off = W - 40, 0.0
-    b.append('<g transform="translate(20,124)">')
+    b.append('<g transform="translate(20,108)">')
     for i, (lname, pct) in enumerate(langs):
         seg = bw * pct / total
-        b.append(f'<rect x="{off:.1f}" y="0" width="{max(seg - 2, 2):.1f}" height="9" rx="4.5" '
+        b.append(f'<rect x="{off:.1f}" y="0" width="{max(seg - 2, 2):.1f}" height="8" rx="2" '
                  f'fill="{LANG.get(lname, "#8b949e")}" class="bar" '
-                 f'style="transform-origin:{off:.1f}px 0;animation-delay:{.25 + i * .1:.2f}s"/>')
+                 f'style="transform-origin:{off:.1f}px 0;animation-delay:{.25 + i * .08:.2f}s"/>')
         off += seg
     b.append('</g>')
 
-    for i, (lname, pct) in enumerate(langs[:3]):
-        lx = 20 + i * 98
+    lx = 20
+    for i, (lname, pct) in enumerate(langs):
         b.append(f'<g class="rise" style="animation-delay:{.4 + i * .06:.2f}s">'
-                 f'<circle cx="{lx + 4}" cy="156" r="4.5" fill="{LANG.get(lname, "#8b949e")}"/>'
-                 f'{txt(lx + 14, 160, f"{lname} {pct}%", size=10, fill="muted")}</g>')
+                 f'<circle cx="{lx + 4}" cy="132" r="4" fill="{LANG.get(lname, "#8b949e")}"/>'
+                 f'{txt(lx + 12, 136, f"{lname} {pct:g}%", size=9.5, fill="muted")}</g>')
+        lx += 78
 
-    b.append(icon('oc', 'history-16', 20, 170, 12, 'muted'))
-    b.append(txt(36, 180, meta, size=10.5, fill='muted'))
+    b.append(icon('oc', 'history-16', 20, 158, 12, 'muted'))
+    b.append(txt(36, 168, meta, size=10.5, fill='muted'))
     return svg(W, H, f'{name} - {" ".join(desc_lines)} '
                      + ', '.join(f'{l} {p}%' for l, p in langs) + f'. {meta}.',
                theme, ''.join(b))
 
 
 # =====================================================================
-# CONTRIBUTION HEATMAP
+# COMMIT-FLOW SANKEY  (commits -> repo -> language)
 # =====================================================================
-def activity(theme):
-    grid, months = DATA['grid'], DATA['months']
-    cell, gap = 12, 3
-    left, top = 116, 88
-    W = left + 52 * (cell + gap) + 28
-    H = top + 7 * (cell + gap) + 76
-    nz = sorted(c for wk in grid for c in wk if c)
-    qs = [nz[int(len(nz) * f)] for f in (0.25, 0.5, 0.75)] if nz else [1, 1, 1]
-    hs = hues(theme)
+def _apply_pct(total, pcts):
+    """Largest-remainder rounding: whole numbers that still sum to `total`."""
+    raw = [(name, total * pct / 100) for name, pct in pcts]
+    floors = [(name, int(v), v - int(v)) for name, v in raw]
+    used = sum(f for _, f, _ in floors)
+    floors.sort(key=lambda t: -t[2])
+    out = {name: f for name, f, _ in floors}
+    for i in range(total - used):
+        out[floors[i % len(floors)][0]] += 1
+    return out
+
+
+def _sankey_data():
+    per_repo = {r: c for r, c in DATA['per_repo'].items() if c > 0}
+    repo_order = sorted(per_repo, key=per_repo.get, reverse=True)
+
+    lang_flows = {}
+    for repo, count in per_repo.items():
+        split = DATA['langs'].get(repo)
+        lang_flows[repo] = _apply_pct(count, split) if split else {'Other languages': count}
+
+    totals = {}
+    for flows in lang_flows.values():
+        for lang, v in flows.items():
+            totals[lang] = totals.get(lang, 0) + v
+    fold_below = max(8, round(sum(totals.values()) * 0.015))
+    kept = {k: v for k, v in totals.items() if v >= fold_below}
+    folded = sum(v for k, v in totals.items() if v < fold_below)
+
+    lang_order = sorted(kept, key=kept.get, reverse=True)
+    if folded > 0:
+        lang_order.append('Other languages')
+        kept['Other languages'] = kept.get('Other languages', 0) + folded
+
+    col0 = [dict(id='commits', label='Commits', value=sum(per_repo.values()))]
+    col1 = [dict(id=r, label=r, value=per_repo[r]) for r in repo_order]
+    col2 = [dict(id=lg, label=lg, value=kept[lg]) for lg in lang_order]
+
+    links01 = [('commits', r, per_repo[r]) for r in repo_order]
+    links12 = []
+    for r in repo_order:
+        flows = lang_flows[r]
+        for lg in lang_order:
+            v = flows.get(lg, 0)
+            if lg == 'Other languages':
+                v += sum(val for name, val in flows.items() if name not in kept and name != 'Other languages')
+            if v > 0:
+                links12.append((r, lg, v))
+    return [col0, col1, col2], links01 + links12
+
+
+def sankey(theme):
+    columns, links = _sankey_data()
+    W, H, pad, node_w, node_gap = 1000, 460, 26, 16, 9
+    ac = accent(theme)
+    n_cols = len(columns)
+    col_gap = (W - 2 * pad - node_w * n_cols) / (n_cols - 1)
+    inner_h = H - 2 * pad - 34
+    scale = min((inner_h - node_gap * (len(col) - 1)) / sum(n['value'] for n in col)
+                for col in columns)
+
+    pos = {}
+    for ci, col in enumerate(columns):
+        x = pad + ci * (node_w + col_gap)
+        y = pad + 34
+        for n in col:
+            h = n['value'] * scale
+            pos[n['id']] = dict(x=x, y0=y, y1=y + h, col=ci, cursor_l=y, cursor_r=y, **n)
+            y += h + node_gap
+
+    # each repo's hue is frozen in repos.json (see hues.py) - never recomputed
+    # from sort order, so a repo's colour doesn't drift as commit counts shift.
+    repo_colours = {n['id']: repo_hex(REPO_HUE.get(n['id'], 132.0), theme) for n in columns[1]}
+
+    subtitle = f'{DATA["total"]} commits, last 365 days -> repo -> language'
     b = [card(W, H)]
+    b.append(f'<g class="rise">{txt(28, 32, "Commit flow", size=15, weight="600")}'
+             f'{txt(W - 28, 32, subtitle, size=11.5, fill="muted", anchor="end")}</g>')
 
-    b.append(icon('oc', 'graph-16', 28, 32, 16, hs[2]))
-    b.append(txt(52, 45, f'{DATA["total"]} commits in the last year', size=15, weight='600'))
-    b.append(txt(W - 28, 45, 'authored by me, across 6 public repositories',
-                 size=12, fill='muted', anchor='end'))
-    b.append(colour_bar(28, 60, 210, theme, h=4, delay=.1))
+    for i, (src, tgt, val) in enumerate(links):
+        s, t = pos[src], pos[tgt]
+        h = val * scale
+        sy, ty = s['cursor_r'], t['cursor_l']
+        s['cursor_r'] += h
+        t['cursor_l'] += h
+        x0, x1 = s['x'] + node_w, t['x']
+        xm = (x0 + x1) / 2
+        d = (f'M{x0:.1f},{sy:.1f} C{xm:.1f},{sy:.1f} {xm:.1f},{ty:.1f} {x1:.1f},{ty:.1f} '
+             f'L{x1:.1f},{ty + h:.1f} C{xm:.1f},{ty + h:.1f} {xm:.1f},{sy + h:.1f} {x0:.1f},{sy + h:.1f} Z')
+        # commits -> repo: coloured by the repo. repo -> language: coloured by the
+        # language, in Linguist's own colours - the same ones on the repo cards above.
+        fill = repo_colours[tgt] if src == 'commits' else LANG.get(tgt, '#8b949e')
+        op = 0.42 if src == 'commits' else 0.55
+        b.append(f'<path d="{d}" fill="{fill}" fill-opacity="{op}" class="rise" '
+                 f'style="animation-delay:{.15 + i * .02:.2f}s"/>')
 
-    for w, label in months:
-        b.append(txt(left + w * (cell + gap), top - 8, label, size=11, fill='muted'))
-    for dow, label in ((1, 'Mon'), (3, 'Wed'), (5, 'Fri')):
-        b.append(txt(left - 12, top + dow * (cell + gap) + cell - 2, label,
-                     size=11, fill='muted', anchor='end'))
+    for col in columns:
+        for n in col:
+            p = pos[n['id']]
+            h = p['y1'] - p['y0']
+            if n['id'] == 'commits':
+                fill = ac
+            elif n['id'] in repo_colours:
+                fill = repo_colours[n['id']]
+            else:
+                fill = LANG.get(n['id'], '#8b949e')
+            delay = .05 if p['col'] == 0 else .15 + p['col'] * .1
+            b.append(f'<g class="rise" style="animation-delay:{delay:.2f}s">')
+            b.append(f'<rect x="{p["x"]:.1f}" y="{p["y0"]:.1f}" width="{node_w}" '
+                     f'height="{h:.1f}" rx="2" fill="{fill}"/>')
+            if p['col'] == 0:
+                lx, anchor = p['x'] + node_w / 2, 'middle'
+            elif p['col'] == n_cols - 1:
+                lx, anchor = p['x'] - 9, 'end'
+            else:
+                lx, anchor = p['x'] + node_w + 9, 'start'
+            ly = p['y0'] + h / 2
+            b.append(txt(lx, ly - 3, n['label'], size=11.5, weight='600', anchor=anchor))
+            b.append(txt(lx, ly + 11, f'{n["value"]:g}', size=10.5, fill='muted',
+                        anchor=anchor, family=MONO))
+            b.append('</g>')
 
-    for w in range(52):
-        for dow in range(7):
-            c = grid[w][dow]
-            lv = 0 if c == 0 else 1 + sum(c > q for q in qs)
-            x, y = left + w * (cell + gap), top + dow * (cell + gap)
-            b.append(f'<rect x="{x}" y="{y}" width="{cell}" height="{cell}" rx="3" '
-                     f'fill="var(--h{lv})" stroke="var(--border)" stroke-width="0.5" '
-                     f'stroke-opacity="0.4" class="cell" '
-                     f'style="transform-origin:{x + cell / 2}px {y + cell / 2}px;'
-                     f'animation-delay:{0.12 + w * 0.013:.2f}s">'
-                     f'<title>{c} commits</title></rect>')
-
-    ly = H - 32
-    b.append(txt(left, ly, 'Less', size=11, fill='muted'))
-    for i in range(5):
-        b.append(f'<rect x="{left + 38 + i * 16}" y="{ly - 10}" width="{cell}" height="{cell}" '
-                 f'rx="3" fill="var(--h{i})" stroke="var(--border)" stroke-width="0.5" '
-                 f'stroke-opacity="0.4"/>')
-    b.append(txt(left + 124, ly, 'More', size=11, fill='muted'))
-    b.append(f'<circle cx="{W - 186}" cy="{ly - 4}" r="5" fill="{hs[1]}" class="pulse"/>')
-    b.append(txt(W - 172, ly, f'{DATA["active_days"]} days with a commit', size=11, fill='muted'))
-    return svg(W, H, f'Contribution heatmap: {DATA["total"]} commits authored across 6 public '
-                     f'repositories in the last year, on {DATA["active_days"]} active days, '
-                     f'peaking at {DATA["peak"]} in one day.',
+    return svg(W, H, f'Commit flow: {DATA["total"]} commits in the last 365 days, from repo to '
+                     'language, sized by commits. ' +
+                     ', '.join(f'{n["label"]} {n["value"]:g}' for n in columns[1] + columns[2]),
                theme, ''.join(b))
-
-
-# =====================================================================
-# LANGUAGES
-# =====================================================================
-def languages(theme):
-    langs = DATA['overall_langs']
-    W, H = 1000, 160
-    b = [card(W, H)]
-    b.append(icon('oc', 'code-16', 28, 32, 16, hues(theme)[0]))
-    b.append(txt(52, 45, 'Languages', size=15, weight='600'))
-    b.append(txt(W - 28, 45, f'{DATA["lang_repos"]} public repositories, '
-                             f'{DATA["lang_bytes"] / 1e6:.1f} MB of source',
-                 size=12, fill='muted', anchor='end'))
-
-    total = sum(p for _, p in langs) or 1
-    bw, off = W - 56, 0.0
-    b.append('<g transform="translate(28,66)">')
-    for i, (name, pct) in enumerate(langs):
-        seg = bw * pct / total
-        b.append(f'<rect x="{off:.1f}" y="0" width="{max(seg - 2, 2):.1f}" height="12" rx="6" '
-                 f'fill="{LANG.get(name, "#8b949e")}" class="bar" '
-                 f'style="transform-origin:{off:.1f}px 0;animation-delay:{.2 + i * .07:.2f}s"/>')
-        off += seg
-    b.append('</g>')
-
-    for i, (name, pct) in enumerate(langs[:6]):
-        x = 28 + i * 162
-        b.append(f'<g class="rise" style="animation-delay:{.35 + i * .05:.2f}s">'
-                 f'<circle cx="{x + 5}" cy="112" r="5" fill="{LANG.get(name, "#8b949e")}"/>'
-                 f'{txt(x + 17, 116, name, size=12.5, weight="500")}'
-                 f'{txt(x + 17, 135, f"{pct}%", size=12, fill="muted", family=MONO)}</g>')
-    return svg(W, H, 'Languages across every public non-fork repository: '
-                     + ', '.join(f'{n} {p}%' for n, p in langs), theme, ''.join(b))
 
 
 # =====================================================================
 # FOOTER
 # =====================================================================
 def footer(theme):
-    W, H = 1000, 94
-    hs = hues(theme)
-    b = [card(W, H), colour_bar(8, 0.5, W - 16, theme, h=4, delay=0, rx=2)]
-    b.append(f'<circle cx="38" cy="54" r="5" fill="{hs[1]}" class="pulse"/>')
-    b.append(txt(56, 59, 'Open to talk about developer tooling, static analysis, '
+    W, H = 1000, 76
+    ac = accent(theme)
+    b = [card(W, H), rect(8, 0.5, W - 16, 3, ac, rx=1.5)]
+    b.append(f'<circle cx="32" cy="41" r="5" fill="{ac}" class="pulse"/>')
+    b.append(txt(50, 46, 'Open to talk about developer tooling, static analysis, '
                          'and anything AI-adjacent.', size=13.5))
-    b.append(icon('oc', 'link-16', W - 244, 46, 16, hs[0]))
-    b.append(txt(W - 220, 59, 'linkedin.com/in/jurreandenys', size=13, fill=hs[0], weight='600'))
     return svg(W, H, 'Open to talk about developer tooling, static analysis and anything '
-                     'AI-adjacent - linkedin.com/in/jurreandenys', theme, ''.join(b))
+                     'AI-adjacent.', theme, ''.join(b))
 
 
 if __name__ == '__main__':
@@ -328,23 +373,22 @@ if __name__ == '__main__':
         ('mallard', 'Mallard',
          ['A VS Code extension that tracks how much',
           'your AI coding assistant costs you.'],
-         DATA['langs']['Mallard'], f"{DATA['per_repo']['Mallard']} commits by me", 0),
+         DATA['langs'].get('Mallard', []), f"{DATA['per_repo'].get('Mallard', 0)} commits by me"),
         ('burnt', 'burnt',
          ['Static analysis for Databricks and Spark',
           'pipelines - one code graph, 110 rules.'],
-         DATA['langs']['burnt'], f"{DATA['per_repo']['burnt']} commits by me", 1),
+         DATA['langs'].get('burnt', []), f"{DATA['per_repo'].get('burnt', 0)} commits by me"),
         ('grammar', 'tree-sitter-sql-extended',
          ['A tree-sitter SQL grammar: an ANSI base',
           'plus 22 compiled dialects.'],
-         DATA['langs']['tree-sitter-sql-extended'],
-         f"{DATA['per_repo']['tree-sitter-sql-extended']} commits by me", 2),
+         DATA['langs'].get('tree-sitter-sql-extended', []),
+         f"{DATA['per_repo'].get('tree-sitter-sql-extended', 0)} commits by me"),
     ]
     for theme in ('light', 'dark'):
         write('header.svg', theme, header(theme))
-        for slug, name, desc, langs, meta, hue_i in repos:
-            write(f'repo-{slug}.svg', theme, repo_card(theme, name, desc, langs, meta, hue_i))
-        write('activity.svg', theme, activity(theme))
-        write('languages.svg', theme, languages(theme))
+        for slug, name, desc, langs, meta in repos:
+            write(f'repo-{slug}.svg', theme, repo_card(theme, name, desc, langs, meta))
+        write('sankey.svg', theme, sankey(theme))
         write('footer.svg', theme, footer(theme))
     n = len(list(HERE.glob('*.svg'))) + len(list((HERE / 'dark').glob('*.svg')))
     print(f'wrote {n} svg files (light + dark)')

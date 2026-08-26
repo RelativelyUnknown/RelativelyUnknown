@@ -1,0 +1,57 @@
+name: Refresh profile stats
+
+on:
+  schedule:
+    # 12:00 UTC daily.
+    - cron: '0 12 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout profile
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Discover owned and contributed repos
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd assets && python3 discover_repos.py
+
+      - name: Refresh language colours from Linguist
+        run: |
+          cd assets && python3 build_lang_colors.py
+
+      - name: Clone source repositories
+        run: |
+          mkdir -p ../src
+          cd assets && python3 list_repos.py | while read -r owner repo; do
+            git clone --quiet "https://github.com/$owner/$repo.git" "../../src/${owner}__${repo}" \
+              || echo "skip $owner/$repo (not found or private)"
+          done
+
+      - name: Rebuild data and SVGs
+        run: |
+          python3 assets/build_data.py ../src
+          python3 assets/generate.py
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/repos.json assets/lang-colors.json assets/data.json assets/*.svg assets/dark/*.svg
+          if git diff --cached --quiet; then
+            echo "Nothing changed."
+          else
+            git commit -m "chore: refresh profile stats"
+            git push
+          fi
