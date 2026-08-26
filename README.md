@@ -8,4 +8,4 @@
 
 <picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/sankey.svg"/><img src="assets/sankey.svg" alt="Commit flow: 686 commits in the last 365 days, from repo to language, sized by commits. burnt 207, tree-sitter-sql-extended 199, Mallard 129, Hobby-SelfHostedHytaleServer 87, Jepa_Experiments 62, RelativelyUnknown 2, TypeScript 191, JavaScript 179, Python 171, Rust 132, Other languages 13." width="100%"/></picture>
 
-<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/footer.svg"/><img src="assets/footer.svg" alt="Open to talk about developer tooling, static analysis, and anything AI-adjacent." width="100%"/></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/footer.svg"/><img src="assets/footer.svg" alt="Open to talk about developer tooling, static analysis, and anything Data Engineering adjacent." width="100%"/></picture>
