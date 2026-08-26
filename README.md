@@ -1,9 +1,9 @@
-<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/header.svg"/><img src="assets/header.svg" alt="RelativelyUnknown — data and AI engineering. I build tools that sit close to the code: static analysis, language grammars, and the editor surfaces around them." width="100%"/></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/header.svg"/><img src="assets/header.svg" alt="RelativelyUnknown — data and AI engineering. I build tools that sit close to the code: static analysis, language grammars, and editor tooling. 537 commits in the last year." width="100%"/></picture>
 
 <p align="center">
-<a href="https://github.com/RelativelyUnknown/Mallard"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/repo-mallard.svg"/><img src="assets/repo-mallard.svg" alt="Mallard — a VS Code extension that tracks how much your AI coding assistant is actually costing you. TypeScript 82.9%, Python 14.3%." width="32%"/></picture></a>
-<a href="https://github.com/RelativelyUnknown/burnt"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/repo-burnt.svg"/><img src="assets/repo-burnt.svg" alt="burnt — static analysis for Databricks and Spark pipelines: one code graph, 110 rules. Rust 63.8%, Python 35.8%." width="32%"/></picture></a>
-<a href="https://github.com/RelativelyUnknown/tree-sitter-sql-extended"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/repo-grammar.svg"/><img src="assets/repo-grammar.svg" alt="tree-sitter-sql-extended — a tree-sitter SQL grammar: an ANSI base plus 22 independently compiled dialects." width="32%"/></picture></a>
+<a href="https://github.com/RelativelyUnknown/Mallard"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/repo-mallard.svg"/><img src="assets/repo-mallard.svg" alt="Mallard — a VS Code extension that tracks how much your AI coding assistant is actually costing you. TypeScript 82.9%, Python 14.3%. 129 commits by me." width="32%"/></picture></a>
+<a href="https://github.com/RelativelyUnknown/burnt"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/repo-burnt.svg"/><img src="assets/repo-burnt.svg" alt="burnt — static analysis for Databricks and Spark pipelines: one code graph, 110 rules. Rust 63.8%, Python 35.8%. 207 commits by me." width="32%"/></picture></a>
+<a href="https://github.com/RelativelyUnknown/tree-sitter-sql-extended"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/repo-grammar.svg"/><img src="assets/repo-grammar.svg" alt="tree-sitter-sql-extended — a tree-sitter SQL grammar: an ANSI base plus 22 independently compiled dialects. JavaScript 88.3%, Python 6.1%. 199 commits by me." width="32%"/></picture></a>
 </p>
 
 <picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/activity.svg"/><img src="assets/activity.svg" alt="Contribution heatmap: 537 commits authored across 4 public repositories in the last year, on 77 active days." width="100%"/></picture>
@@ -29,8 +29,8 @@ flowchart LR
   classDef out fill:#9a670022,stroke:#9a6700,color:#9a6700
 ```
 
-<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/languages.svg"/><img src="assets/languages.svg" alt="Languages across every non-fork repository: TypeScript 56.6%, Python 28.4%, Rust 9.2%, CSS 1.7%, HTML 1.5%, JavaScript 1.3%." width="100%"/></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/languages.svg"/><img src="assets/languages.svg" alt="Languages across every non-fork repository: TypeScript 56.6%, Python 28.4%, Rust 9.2%, CSS 1.7%, HTML 1.5%, JavaScript 1.3%, SCSS 0.6%, Shell 0.5%." width="100%"/></picture>
 
-<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/stack.svg"/><img src="assets/stack.svg" alt="Stack: Python, Rust, TypeScript, Go, C; PyTorch, TensorFlow, scikit-learn, pandas, NumPy; Spark, Databricks, PostgreSQL, MySQL, Grafana; Docker, Kubernetes, Linux, Git, GitHub Actions." width="100%"/></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/stack.svg"/><img src="assets/stack.svg" alt="Stack: TypeScript, Python, Rust, JavaScript, SQL; PyTorch, TensorFlow, scikit-learn, pandas, NumPy; Spark, Databricks, PostgreSQL, MySQL, Grafana; Docker, Kubernetes, Linux, Git, GitHub Actions." width="100%"/></picture>
 
 <a href="https://www.linkedin.com/in/jurreandenys/"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/footer.svg"/><img src="assets/footer.svg" alt="Open to talk about developer tooling, static analysis, and anything AI-adjacent — linkedin.com/in/jurreandenys" width="100%"/></picture></a>
