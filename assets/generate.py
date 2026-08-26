@@ -1,251 +1,334 @@
 #!/usr/bin/env python3
-"""SVG blocks for the RelativelyUnknown profile README.
+"""Generate the SVG blocks for the RelativelyUnknown profile README.
 
-ONE SYSTEM, held to deliberately narrow rules so the page reads as a single
-object rather than a pile of ideas:
+Design follows GitHub's own Primer system so the page sits inside github.com
+rather than on top of it: Primer colour tokens, 6px radii, 1px borders, repo
+cards, language bars, Linguist language colours, a contribution heatmap, and
+Octicons.
 
-  GROUND    one dark warm brown-black, everywhere
-  PALETTE   five saturated hues, lifted verbatim from the palette sheet in
-            the reference set, plus cream. Nothing else, ever.
-  MARKS     circle, ring, capsule, round-capped stroke. That is the entire
-            shape vocabulary — no hairlines, no grids, no rulers, no texture.
-  CONTRAST  cream marks on colour; dark text on filled colour; cream text on
-            the ground. Never a third combination.
-  TYPE      one bold sans for names and numerals, one mono for small caps.
+Every block is emitted twice — light and dark — and the README picks between
+them with <picture media="(prefers-color-scheme: dark)">, which is the only
+theming mechanism GitHub honours for images.
 
-Structure comes from the reference set's dominant device: a flat colour panel
-carrying one simple mark, captioned beneath (the law-card grid), sequenced and
-numbered (the shape-sequence strips), with a tile grid where colour marks
-frequency rather than decorating (the widget grids).
+Motion is CSS @keyframes inside each SVG file. GitHub strips <style> from
+README HTML, but keeps it inside an SVG loaded as an image. Every animation
+is guarded by prefers-reduced-motion.
+
+Third-party artwork, vendored as path data in icons.json:
+  Simple Icons    - CC0-1.0   https://github.com/simple-icons/simple-icons
+  Primer Octicons - MIT       https://github.com/primer/octicons
+Brand marks remain trademarks of their respective owners.
+
+Numbers in data.json come from the git history of the repositories and from
+their working trees; regenerate them with build_data.py.
 """
-import math
+import json
 import pathlib
 
-OUT = pathlib.Path(__file__).resolve().parent
+HERE = pathlib.Path(__file__).resolve().parent
+ICONS = json.loads((HERE / 'icons.json').read_text())
+DATA = json.loads((HERE / 'data.json').read_text())
+BRAND = json.loads((HERE / 'si-colours.json').read_text())
 
-# ---- palette: taken directly from the reference palette sheet -------------
-BG     = '#1A1410'   # dark warm brown-black ground
-CREAM  = '#F8F3E0'
-GREEN  = '#31DB92'
-YELLOW = '#FFD93B'
-VERM   = '#FF5831'
-BLUE   = '#1569FF'
-PINK   = '#FF7BDD'
 
-HUES = [GREEN, YELLOW, VERM, BLUE, PINK]
+def _lum(hex_colour):
+    r, g, b = (int(hex_colour[i:i + 2], 16) / 255 for i in (1, 3, 5))
+    f = lambda c: c / 12.92 if c <= .03928 else ((c + .055) / 1.055) ** 2.4
+    return .2126 * f(r) + .7152 * f(g) + .0722 * f(b)
 
-MONO = "ui-monospace,SFMono-Regular,Menlo,Consolas,'DejaVu Sans Mono',monospace"
-SANS = "'Helvetica Neue',Helvetica,Arial,sans-serif"
+
+def brand(slug, theme):
+    """Brand colour, falling back to the foreground where it would vanish
+    into the canvas (Rust, pandas and NumPy are near-black)."""
+    c = BRAND.get(slug)
+    if not c:
+        return 'fg'
+    lum = _lum(c)
+    if theme == 'dark' and lum < 0.16:
+        return 'fg'
+    if theme == 'light' and lum > 0.75:
+        return 'fg'
+    return c
+
+# ---- Primer colour tokens -------------------------------------------------
+THEMES = {
+    'light': dict(canvas='#ffffff', subtle='#f6f8fa', border='#d1d9e0', fg='#1f2328',
+                  muted='#59636e', accent='#0969da', success='#1a7f37',
+                  heat=['#eff2f5', '#aceebb', '#4ac26b', '#2da44e', '#116329']),
+    'dark': dict(canvas='#0d1117', subtle='#151b23', border='#3d444d', fg='#f0f6fc',
+                 muted='#9198a1', accent='#4493f8', success='#3fb950',
+                 heat=['#151b23', '#033a16', '#196c2e', '#2ea043', '#56d364']),
+}
+
+# ---- GitHub Linguist language colours ------------------------------------
+LANG = {'Python': '#3572A5', 'Rust': '#dea584', 'TypeScript': '#3178c6',
+        'JavaScript': '#f1e05a', 'Go': '#00ADD8', 'C': '#555555', 'Vue': '#41b883',
+        'Shell': '#89e051', 'Scheme': '#1e4aec', 'SQL': '#e38c00'}
+
+SANS = ("-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif")
+MONO = "ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace"
 
 
 def esc(s):
     return s.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
 
 
-def head(w, h, label):
+def txt(x, y, s, size=13, fill='fg', weight='400', anchor='start', family=SANS, cls=''):
+    c = f' class="{cls}"' if cls else ''
+    return (f'<text x="{x}" y="{y}" font-family="{family}" font-size="{size}" '
+            f'font-weight="{weight}" fill="var(--{fill})" text-anchor="{anchor}"{c}>'
+            f'{esc(s)}</text>')
+
+
+def rect(x, y, w, h, fill=None, stroke=None, rx=0, sw=1, cls=''):
+    f = 'none' if fill is None else f'var(--{fill})'
+    s = f' stroke="var(--{stroke})" stroke-width="{sw}"' if stroke else ''
+    c = f' class="{cls}"' if cls else ''
+    return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" fill="{f}"{s}{c}/>'
+
+
+def icon(kind, name, x, y, size, colour):
+    """Place a vendored Simple Icon or Octicon, scaled and recoloured."""
+    ic = ICONS[kind][name]
+    vb = [float(v) for v in ic['vb'].split()]
+    scale = size / vb[2]
+    fill = colour if colour.startswith('#') else f'var(--{colour})'
+    paths = ''.join(f'<path d="{d}"/>' for d in ic['d'])
+    return f'<g transform="translate({x},{y}) scale({scale:.5f})" fill="{fill}">{paths}</g>'
+
+
+def card(w, h):
+    return rect(0.5, 0.5, w - 1, h - 1, 'canvas', 'border', rx=6)
+
+
+def style(theme):
+    t = THEMES[theme]
+    vars_ = ';'.join(f'--{k}:{v}' for k, v in t.items() if k != 'heat')
+    heat = ';'.join(f'--h{i}:{c}' for i, c in enumerate(t['heat']))
+    return ('<style>'
+            f'svg{{{vars_};{heat}}}'
+            '.rise{opacity:0;animation:rise .5s cubic-bezier(.2,.7,.2,1) forwards}'
+            '@keyframes rise{from{opacity:0;transform:translateY(6px)}'
+            'to{opacity:1;transform:translateY(0)}}'
+            '.bar{transform:scaleX(0);animation:grow .9s cubic-bezier(.2,.7,.2,1) .25s forwards}'
+            '@keyframes grow{to{transform:scaleX(1)}}'
+            '.cell{opacity:0;animation:pop .32s ease-out forwards}'
+            '@keyframes pop{from{opacity:0}to{opacity:1}}'
+            '.pulse{animation:pulse 2.6s ease-in-out infinite}'
+            '@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}'
+            '@media (prefers-reduced-motion:reduce){'
+            '.rise,.bar,.cell,.pulse{animation:none;opacity:1;transform:none}}'
+            '</style>')
+
+
+def svg(w, h, label, theme, body):
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" '
-            f'height="{h}" role="img" aria-label="{esc(label)}">')
+            f'height="{h}" role="img" aria-label="{esc(label)}">'
+            f'{style(theme)}{body}</svg>\n')
 
 
-def txt(x, y, s, size=12, fill=CREAM, family=MONO, weight='400', anchor='start', ls=0, op=None):
-    o = f' opacity="{op}"' if op is not None else ''
-    l = f' letter-spacing="{ls}"' if ls else ''
-    return (f'<text x="{x}" y="{y}" font-family="{family}" font-size="{size}" font-weight="{weight}" '
-            f'fill="{fill}" text-anchor="{anchor}"{l}{o}>{esc(s)}</text>')
-
-
-def box(x, y, w, h, fill, rx=0, stroke=None, sw=2, op=None):
-    s = f' stroke="{stroke}" stroke-width="{sw}"' if stroke else ''
-    o = f' opacity="{op}"' if op is not None else ''
-    return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" fill="{fill}"{s}{o}/>'
-
-
-def dot(cx, cy, r, fill):
-    return f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="{r}" fill="{fill}"/>'
-
-
-def ring(cx, cy, r, stroke, sw=12):
-    return (f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="{r}" fill="none" '
-            f'stroke="{stroke}" stroke-width="{sw}"/>')
-
-
-def stroke_line(x1, y1, x2, y2, colour, sw=12):
-    return (f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" stroke="{colour}" '
-            f'stroke-width="{sw}" stroke-linecap="round"/>')
-
-
-def capsule(x, y, w, h, fill):
-    return box(x, y, w, h, fill, rx=min(w, h) / 2)
-
-
-def arc(cx, cy, r, a0, a1, colour, sw=12):
-    """Round-capped arc, angles in degrees clockwise from 12 o'clock."""
-    def pt(a):
-        rad = math.radians(a - 90)
-        return cx + math.cos(rad) * r, cy + math.sin(rad) * r
-    x0, y0 = pt(a0)
-    x1, y1 = pt(a1)
-    large = 1 if (a1 - a0) % 360 > 180 else 0
-    return (f'<path d="M{x0:.1f},{y0:.1f} A{r},{r} 0 {large} 1 {x1:.1f},{y1:.1f}" fill="none" '
-            f'stroke="{colour}" stroke-width="{sw}" stroke-linecap="round"/>')
-
-
-def write(name, body):
-    (OUT / name).write_text(body + '</svg>\n')
-    print(f'  {name:16s} {len(body):6d} B')
+def write(name, theme, content):
+    d = HERE if theme == 'light' else HERE / 'dark'
+    d.mkdir(parents=True, exist_ok=True)
+    (d / name).write_text(content)
 
 
 # =====================================================================
 # HEADER
 # =====================================================================
-def header():
-    W, H = 1200, 300
-    s = [head(W, H, 'RelativelyUnknown — I build tools that sit close to the code'),
-         box(0, 0, W, H, BG)]
+def header(theme):
+    W, H = 1000, 236
+    b = [card(W, H)]
+    b.append(f'<g class="rise">{txt(28, 62, "RelativelyUnknown", size=30, weight="600")}</g>')
+    b.append(f'<g class="rise" style="animation-delay:.06s">'
+             f'{txt(28, 88, "Data and AI engineering", size=15, fill="muted")}</g>')
+    b.append(f'<g class="rise" style="animation-delay:.12s">'
+             f'{txt(28, 124, "I build tools that sit close to the code - static analysis,", size=14)}'
+             f'{txt(28, 146, "language grammars, and the editor surfaces around them.", size=14)}</g>')
 
-    s.append(txt(64, 132, 'RELATIVELY', size=66, family=SANS, weight='700', ls=-2))
-    s.append(txt(64, 202, 'UNKNOWN', size=66, family=SANS, weight='700', ls=-2, op=0.42))
+    for i, (ic, label, y) in enumerate([('code-16', 'TypeScript / Rust / Python', 186),
+                                        ('repo-16', '3 public projects', 210)]):
+        b.append(f'<g class="rise" style="animation-delay:{.18 + i * .06:.2f}s">'
+                 f'{icon("oc", ic, 28, y - 12, 15, "muted")}'
+                 f'{txt(52, y, label, size=13, fill="muted")}</g>')
 
-    s.append(txt(660, 116, 'I build tools that sit', size=21, family=SANS, weight='500'))
-    s.append(txt(660, 146, 'close to the code.', size=21, family=SANS, weight='500'))
-    s.append(txt(660, 186, 'STATIC ANALYSIS  ·  LANGUAGE GRAMMARS  ·  EDITOR TOOLING',
-                 size=10, ls=1.4, op=0.5))
-
-    # signature bar — the shape-sequence strip, reduced to pure colour
-    seg = [(GREEN, 186), (YELLOW, 98), (VERM, 254), (BLUE, 142), (PINK, 78)]
-    x = 64
-    for colour, w in seg:
-        s.append(box(x, 242, w, 14, colour, rx=7))
-        x += w + 12
-    return ''.join(s)
-
-
-# =====================================================================
-# PROJECT CARDS — flat colour panel, one mark, caption beneath
-# =====================================================================
-def card(num, title, line, meta, hue, mark):
-    W, H = 380, 404
-    s = [head(W, H, f'{title} — {line}'), box(0, 0, W, H, BG)]
-    s.append(box(0, 0, W, 236, hue, rx=10))
-    s.append(f'<g transform="translate({W/2},118)">{mark}</g>')
-    s.append(txt(7, 286, num, size=13, fill=hue, ls=1.6))
-    s.append(txt(7, 322, title, size=29, family=SANS, weight='700', ls=-0.6))
-    s.append(txt(7, 352, line, size=15, family=SANS, weight='400', op=0.62))
-    s.append(txt(7, 386, meta, size=10.5, fill=hue, ls=1.5))
-    return ''.join(s)
-
-
-def mark_meter():
-    """Spend rising past a fixed cap."""
-    g = []
-    for i, h in enumerate((46, 74, 104)):
-        g.append(capsule(-96 + i * 62, 62 - h, 40, h, CREAM))
-    g.append(capsule(34, 62 - 150, 40, 150, CREAM))
-    g.append(stroke_line(-124, -46, 102, -46, BG, 8))
-    g.append(dot(54, -46, 11, BG))
-    return ''.join(g)
-
-
-def mark_graph():
-    """Three nodes, two links, one flagged."""
-    g = [stroke_line(-96, 34, 0, -44, CREAM, 11),
-         stroke_line(0, -44, 96, 34, CREAM, 11),
-         dot(-96, 34, 27, CREAM),
-         dot(0, -44, 27, CREAM)]
-    g.append(dot(96, 34, 30, BG))
-    g.append(ring(96, 34, 24, CREAM, 12))
-    return ''.join(g)
-
-
-def mark_fan():
-    """One root branching into many."""
-    g = []
-    for dy in (-72, -24, 24, 72):
-        g.append(stroke_line(-88, 0, 74, dy, CREAM, 10))
-    g.append(dot(-88, 0, 28, CREAM))
-    for dy in (-72, -24, 24, 72):
-        g.append(dot(84, dy, 16, CREAM))
-    return ''.join(g)
+    stats = [(str(DATA['total']), 'commits, last year'),
+             (str(DATA['active_days']), 'days with commits'),
+             (str(len(DATA['langs'])), 'projects shipped')]
+    for i, (n, lab) in enumerate(stats):
+        y = 84 + i * 48
+        b.append(f'<g class="rise" style="animation-delay:{.24 + i * .07:.2f}s">'
+                 f'{rect(660, y - 26, 312, 40, "subtle", "border", rx=6)}'
+                 f'{txt(676, y, n, size=17, weight="600", family=MONO)}'
+                 f'{txt(956, y, lab, size=12, fill="muted", anchor="end")}</g>')
+    return svg(W, H, 'RelativelyUnknown - data and AI engineering. I build tools that sit close '
+                     'to the code: static analysis, language grammars, and editor tooling.',
+               theme, ''.join(b))
 
 
 # =====================================================================
-# STACK — tile grid; colour marks daily use, outline marks occasional
+# REPO CARDS
 # =====================================================================
-def stack():
-    cols, tw, th, gap = 6, 182, 58, 12
-    LANG, ML, PLAT, INFRA = BLUE, GREEN, VERM, YELLOW
-    # exactly six per category, so each row of the grid is one category
-    tools = [
-        ('Python', LANG, 1), ('Rust', LANG, 1), ('TypeScript', LANG, 1),
-        ('SQL', LANG, 1), ('Go', LANG, 0), ('C', LANG, 0),
+def repo_card(theme, name, desc_lines, langs, meta):
+    W, H = 326, 182
+    b = [card(W, H)]
+    b.append(icon('oc', 'repo-16', 16, 18, 16, 'muted'))
+    b.append(txt(40, 31, name, size=13.5, weight='600', fill='accent'))
+    b.append(rect(W - 74, 17, 58, 20, None, 'border', rx=10))
+    b.append(txt(W - 45, 31, 'Public', size=11, fill='muted', anchor='middle'))
+    for i, ln in enumerate(desc_lines):
+        b.append(txt(16, 60 + i * 18, ln, size=12, fill='muted'))
 
-        ('PyTorch', ML, 1), ('pandas', ML, 1), ('NumPy', ML, 0),
-        ('scikit-learn', ML, 0), ('TensorFlow', ML, 0), ('Seaborn', ML, 0),
+    total = sum(p for _, p in langs) or 1
+    bw = W - 32
+    b.append('<g transform="translate(16,120)">')
+    off = 0.0
+    for lname, pct in langs:
+        seg = bw * pct / total
+        b.append(f'<rect x="{off:.1f}" y="0" width="{max(seg - 2, 2):.1f}" height="8" rx="4" '
+                 f'fill="{LANG.get(lname, "#8b949e")}" class="bar" '
+                 f'style="transform-origin:{off:.1f}px 0"/>')
+        off += seg
+    b.append('</g>')
 
-        ('tree-sitter', PLAT, 1), ('Spark', PLAT, 1), ('Databricks', PLAT, 1),
-        ('Postgres', PLAT, 1), ('MySQL', PLAT, 0), ('Grafana', PLAT, 0),
+    for i, (lname, pct) in enumerate(langs[:3]):
+        lx = 16 + i * 104
+        b.append(f'<circle cx="{lx + 5}" cy="150" r="5" fill="{LANG.get(lname, "#8b949e")}"/>')
+        b.append(txt(lx + 16, 154, f'{lname} {pct}%', size=10.5, fill='muted'))
 
-        ('Git', INFRA, 1), ('Linux', INFRA, 1), ('Docker', INFRA, 1),
-        ('GitHub Actions', INFRA, 1), ('Kubernetes', INFRA, 0), ('Jenkins', INFRA, 0),
+    b.append(icon('oc', 'history-16', 16, 164, 13, 'muted'))
+    b.append(txt(34, 175, meta, size=10.5, fill='muted'))
+    return svg(W, H, f'{name} - {" ".join(desc_lines)} {meta}', theme, ''.join(b))
+
+
+# =====================================================================
+# CONTRIBUTION HEATMAP
+# =====================================================================
+def activity(theme):
+    grid, months = DATA['grid'], DATA['months']
+    cell, gap = 12, 3
+    left, top = 116, 78
+    W = left + 52 * (cell + gap) + 28
+    H = top + 7 * (cell + gap) + 74
+    nz = sorted(c for wk in grid for c in wk if c)
+    qs = [nz[int(len(nz) * f)] for f in (0.25, 0.5, 0.75)] if nz else [1, 1, 1]
+    b = [card(W, H)]
+
+    b.append(icon('oc', 'graph-16', 28, 32, 16, 'muted'))
+    b.append(txt(52, 45, f'{DATA["total"]} commits in the last year', size=15, weight='600'))
+    b.append(txt(W - 28, 45, 'authored by me, across 4 public repositories',
+                 size=12, fill='muted', anchor='end'))
+
+    for w, label in months:
+        b.append(txt(left + w * (cell + gap), top - 8, label, size=11, fill='muted'))
+    for dow, label in ((1, 'Mon'), (3, 'Wed'), (5, 'Fri')):
+        b.append(txt(left - 12, top + dow * (cell + gap) + cell - 2, label,
+                     size=11, fill='muted', anchor='end'))
+
+    for w in range(52):
+        for dow in range(7):
+            c = grid[w][dow]
+            lv = 0 if c == 0 else 1 + sum(c > q for q in qs)
+            x, y = left + w * (cell + gap), top + dow * (cell + gap)
+            b.append(f'<rect x="{x}" y="{y}" width="{cell}" height="{cell}" rx="3" '
+                     f'fill="var(--h{lv})" stroke="var(--border)" stroke-width="0.5" '
+                     f'stroke-opacity="0.35" class="cell" '
+                     f'style="animation-delay:{0.15 + w * 0.012:.2f}s">'
+                     f'<title>{c} commits</title></rect>')
+
+    ly = H - 32
+    b.append(txt(left, ly, 'Less', size=11, fill='muted'))
+    for i in range(5):
+        b.append(f'<rect x="{left + 38 + i * 16}" y="{ly - 10}" width="{cell}" height="{cell}" '
+                 f'rx="3" fill="var(--h{i})" stroke="var(--border)" stroke-width="0.5" '
+                 f'stroke-opacity="0.35"/>')
+    b.append(txt(left + 124, ly, 'More', size=11, fill='muted'))
+    b.append(f'<circle cx="{W - 168}" cy="{ly - 4}" r="4" fill="var(--success)" class="pulse"/>')
+    b.append(txt(W - 156, ly, f'busiest day: {DATA["peak"]} commits', size=11, fill='muted'))
+    return svg(W, H, f'Contribution heatmap: {DATA["total"]} commits authored across 4 public '
+                     f'repositories in the last year, on {DATA["active_days"]} active days.',
+               theme, ''.join(b))
+
+
+# =====================================================================
+# STACK
+# =====================================================================
+def stack(theme):
+    groups = [
+        ('Languages', [('Python', 'python'), ('Rust', 'rust'), ('TypeScript', 'typescript'),
+                       ('Go', 'go'), ('C', 'c')]),
+        ('Data and models', [('PyTorch', 'pytorch'), ('TensorFlow', 'tensorflow'),
+                             ('scikit-learn', 'scikitlearn'), ('pandas', 'pandas'),
+                             ('NumPy', 'numpy')]),
+        ('Platform', [('Spark', 'apachespark'), ('Databricks', 'databricks'),
+                      ('PostgreSQL', 'postgresql'), ('MySQL', 'mysql'), ('Grafana', 'grafana')]),
+        ('Infrastructure', [('Docker', 'docker'), ('Kubernetes', 'kubernetes'),
+                            ('Linux', 'linux'), ('Git', 'git'),
+                            ('GitHub Actions', 'githubactions')]),
     ]
-    rows_n = math.ceil(len(tools) / cols)
-    W = cols * tw + (cols - 1) * gap + 128
-    H = rows_n * th + (rows_n - 1) * gap + 178
-    s = [head(W, H, 'The stack — filled tiles are daily, outlined tiles occasional'), box(0, 0, W, H, BG)]
+    tw, th, gap = 172, 40, 10
+    W = 28 * 2 + 5 * tw + 4 * gap
+    rowh = 34 + th + 20
+    H = 64 + len(groups) * rowh
+    b = [card(W, H)]
+    b.append(icon('oc', 'terminal-16', 28, 32, 16, 'muted'))
+    b.append(txt(52, 45, 'Stack', size=15, weight='600'))
+    b.append(txt(W - 28, 45, 'reached for most often', size=12, fill='muted', anchor='end'))
 
-    s.append(txt(64, 68, 'THE STACK', size=13, ls=3.4))
-    s.append(txt(W - 64, 68, f'{len(tools)}', size=13, ls=1.4, op=0.45, anchor='end'))
-
-    for i, (name, hue, daily) in enumerate(tools):
-        x = 64 + (i % cols) * (tw + gap)
-        y = 104 + (i // cols) * (th + gap)
-        if daily:
-            s.append(box(x, y, tw, th, hue, rx=8))
-            s.append(txt(x + tw / 2, y + th / 2 + 5, name, size=14.5, fill=BG,
-                         family=SANS, weight='700', anchor='middle'))
-        else:
-            s.append(box(x, y, tw, th, 'none', rx=8, stroke=hue, sw=1.5, op=0.6))
-            s.append(txt(x + tw / 2, y + th / 2 + 5, name, size=14.5, fill=CREAM,
-                         family=SANS, weight='500', anchor='middle', op=0.72))
-
-    ky = H - 40
-    s.append(box(64, ky - 11, 26, 14, CREAM, rx=7))
-    s.append(txt(100, ky, 'DAILY', size=10, ls=1.4, op=0.55))
-    s.append(box(176, ky - 11, 26, 14, 'none', rx=7, stroke=CREAM, sw=1.5, op=0.4))
-    s.append(txt(212, ky, 'OCCASIONAL', size=10, ls=1.4, op=0.55))
-    for i, (lbl, hue) in enumerate((('LANGUAGE', BLUE), ('MODELLING', GREEN),
-                                    ('PLATFORM', VERM), ('INFRASTRUCTURE', YELLOW))):
-        bx = 430 + i * 190
-        s.append(box(bx, ky - 11, 14, 14, hue, rx=7))
-        s.append(txt(bx + 24, ky, lbl, size=10, ls=1.4, op=0.55))
-    return ''.join(s)
+    n = 0
+    for gi, (gname, items) in enumerate(groups):
+        gy = 66 + gi * rowh
+        b.append(txt(28, gy + 14, gname.upper(), size=10, fill='muted', family=MONO))
+        for i, (label, slug) in enumerate(items):
+            x, y = 28 + i * (tw + gap), gy + 26
+            b.append(f'<g class="rise" style="animation-delay:{.1 + n * .025:.2f}s">'
+                     f'{rect(x, y, tw, th, "subtle", "border", rx=6)}'
+                     f'{icon("si", slug, x + 12, y + 11, 18, brand(slug, theme))}'
+                     f'{txt(x + 40, y + 25, label, size=12.5, weight="500")}</g>')
+            n += 1
+    return svg(W, H, 'Stack: Python, Rust, TypeScript, Go, C; PyTorch, TensorFlow, '
+                     'scikit-learn, pandas, NumPy; Spark, Databricks, PostgreSQL, MySQL, '
+                     'Grafana; Docker, Kubernetes, Linux, Git, GitHub Actions.',
+               theme, ''.join(b))
 
 
 # =====================================================================
 # FOOTER
 # =====================================================================
-def footer():
-    W, H = 1200, 152
-    s = [head(W, H, 'Contact — linkedin.com/in/jurreandenys'), box(0, 0, W, H, BG)]
-    seg = [(PINK, 78), (BLUE, 142), (VERM, 254), (YELLOW, 98), (GREEN, 186)]
-    x = 64
-    for colour, w in seg:
-        s.append(box(x, 44, w, 14, colour, rx=7))
-        x += w + 12
-    s.append(txt(64, 112, 'linkedin.com/in/jurreandenys', size=20, family=SANS, weight='500'))
-    s.append(txt(W - 64, 112, 'OPEN TO TALK', size=11, fill=GREEN, ls=2, anchor='end'))
-    return ''.join(s)
+def footer(theme):
+    W, H = 1000, 78
+    b = [card(W, H)]
+    b.append('<circle cx="34" cy="39" r="5" fill="var(--success)" class="pulse"/>')
+    b.append(txt(50, 44, 'Open to talk about developer tooling, static analysis, '
+                         'and anything AI-adjacent.', size=13.5))
+    b.append(icon('oc', 'link-16', W - 236, 31, 16, 'accent'))
+    b.append(txt(W - 212, 44, 'linkedin.com/in/jurreandenys', size=13, fill='accent',
+                 weight='500'))
+    return svg(W, H, 'Open to talk - linkedin.com/in/jurreandenys', theme, ''.join(b))
 
 
 if __name__ == '__main__':
-    print('generating:')
-    write('head.svg', header())
-    write('card-01.svg', card('01', 'Mallard', 'Watches what AI coding costs you.',
-                              'TYPESCRIPT · VS CODE', BLUE, mark_meter()))
-    write('card-02.svg', card('02', 'burnt', 'Reads a data pipeline as one graph.',
-                              'RUST + PYTHON · 110 RULES', GREEN, mark_graph()))
-    write('card-03.svg', card('03', 'tree-sitter-sql', 'One grammar, twenty-two dialects.',
-                              'RUST + C · NODE / PY / GO', VERM, mark_fan()))
-    write('stack.svg', stack())
-    write('foot.svg', footer())
-    print('done')
+    repos = [
+        ('mallard', 'Mallard',
+         ['A VS Code extension that tracks how much your',
+          'AI coding assistant is actually costing you.'],
+         DATA['langs']['Mallard'], f"{DATA['per_repo']['Mallard']} commits by me"),
+        ('burnt', 'burnt',
+         ['Static analysis for Databricks and Spark',
+          'pipelines - one code graph, 110 rules.'],
+         DATA['langs']['burnt'], f"{DATA['per_repo']['burnt']} commits by me"),
+        ('grammar', 'tree-sitter-sql-extended',
+         ['A tree-sitter SQL grammar: an ANSI base plus',
+          '22 independently compiled dialects.'],
+         DATA['langs']['tree-sitter-sql-extended'],
+         f"{DATA['per_repo']['tree-sitter-sql-extended']} commits by me"),
+    ]
+    for theme in ('light', 'dark'):
+        write('header.svg', theme, header(theme))
+        for slug, name, desc, langs, meta in repos:
+            write(f'repo-{slug}.svg', theme, repo_card(theme, name, desc, langs, meta))
+        write('activity.svg', theme, activity(theme))
+        write('stack.svg', theme, stack(theme))
+        write('footer.svg', theme, footer(theme))
+    n = len(list(HERE.glob('*.svg'))) + len(list((HERE / 'dark').glob('*.svg')))
+    print(f'wrote {n} svg files (light + dark)')
