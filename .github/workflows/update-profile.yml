@@ -27,6 +27,10 @@ jobs:
         run: |
           cd assets && python3 discover_repos.py
 
+      - name: Refresh language colours from Linguist
+        run: |
+          cd assets && python3 build_lang_colors.py
+
       - name: Clone source repositories
         run: |
           mkdir -p ../src
@@ -44,7 +48,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/repos.json assets/data.json assets/*.svg assets/dark/*.svg
+          git add assets/repos.json assets/lang-colors.json assets/data.json assets/*.svg assets/dark/*.svg
           if git diff --cached --quiet; then
             echo "Nothing changed."
           else
