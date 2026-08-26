@@ -83,12 +83,15 @@ def hsl_hex(h, s, l):
 
 
 def analogous(n, theme):
-    """n hues from an analogous range either side of GitHub's brand green (~132deg)."""
+    """n hues from an analogous range either side of GitHub's brand green (~132deg),
+    alternating lightness so neighbours stay visually distinct rather than blurring
+    into one green mass."""
     if n <= 1:
         return [accent(theme)]
-    lo, hi = 92, 192
-    s, l = (0.6, 0.4) if theme == 'light' else (0.55, 0.66)
-    return [hsl_hex(lo + (hi - lo) * i / (n - 1), s, l) for i in range(n)]
+    lo, hi = 58, 206
+    s = 0.68 if theme == 'light' else 0.62
+    l0, l1 = (0.38, 0.5) if theme == 'light' else (0.6, 0.72)
+    return [hsl_hex(lo + (hi - lo) * i / (n - 1), s, l0 if i % 2 == 0 else l1) for i in range(n)]
 
 
 def txt(x, y, s, size=13, fill='fg', weight='400', anchor='start', family=SANS, cls=''):
@@ -327,9 +330,10 @@ def sankey(theme):
         xm = (x0 + x1) / 2
         d = (f'M{x0:.1f},{sy:.1f} C{xm:.1f},{sy:.1f} {xm:.1f},{ty:.1f} {x1:.1f},{ty:.1f} '
              f'L{x1:.1f},{ty + h:.1f} C{xm:.1f},{ty + h:.1f} {xm:.1f},{sy + h:.1f} {x0:.1f},{sy + h:.1f} Z')
-        # coloured by whichever repo the flow belongs to, on both hops
-        fill = repo_colours[tgt] if src == 'commits' else repo_colours[src]
-        op = 0.4 if src == 'commits' else 0.28
+        # commits -> repo: coloured by the repo. repo -> language: coloured by the
+        # language, in Linguist's own colours - the same ones on the repo cards above.
+        fill = repo_colours[tgt] if src == 'commits' else LANG.get(tgt, '#8b949e')
+        op = 0.42 if src == 'commits' else 0.55
         b.append(f'<path d="{d}" fill="{fill}" fill-opacity="{op}" class="rise" '
                  f'style="animation-delay:{.15 + i * .02:.2f}s"/>')
 
@@ -342,7 +346,7 @@ def sankey(theme):
             elif n['id'] in repo_colours:
                 fill = repo_colours[n['id']]
             else:
-                fill = 'var(--muted)'
+                fill = LANG.get(n['id'], '#8b949e')
             delay = .05 if p['col'] == 0 else .15 + p['col'] * .1
             b.append(f'<g class="rise" style="animation-delay:{delay:.2f}s">')
             b.append(f'<rect x="{p["x"]:.1f}" y="{p["y0"]:.1f}" width="{node_w}" '
