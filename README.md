@@ -1,65 +1,13 @@
-<h1 align="center">Hi 👋, I'm Red Panda</h1>
-<h3 align="center">Passionate about AI and all things tech</h3>
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/header.svg"/><img src="assets/header.svg" alt="RelativelyUnknown — data and AI engineering. I build tools that sit close to the code: static analysis, language grammars, and the editor surfaces around them. TypeScript, Python and Rust. 686 commits in the last year across 6 public repositories, on 89 days, peaking at 60 in one day." width="100%"/></picture>
 
 <p align="center">
-  <img src="https://komarev.com/ghpvc/?username=RedPandaMC&label=Profile%20views&color=0e75b6&style=flat" alt="RedPandaMC" />
-  <img src="https://img.shields.io/github/followers/RedPandaMC?label=Followers" alt="RedPandaMC" />
-  <a href="https://github.com/RedPandaMC?tab=repositories" target="_blank">
-    <img src="https://img.shields.io/github/stars/RedPandaMC?label=Projects&style=social" alt="RedPandaMC" />
-  </a> 
+<a href="https://github.com/RelativelyUnknown/Mallard"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/repo-mallard.svg"/><img src="assets/repo-mallard.svg" alt="Mallard — a VS Code extension that tracks how much your AI coding assistant costs you. TypeScript 82.9%, Python 14.3%, CSS 3.5%, JavaScript 1.7%. 129 commits by me." width="32%"/></picture></a>
+<a href="https://github.com/RelativelyUnknown/burnt"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/repo-burnt.svg"/><img src="assets/repo-burnt.svg" alt="burnt — static analysis for Databricks and Spark pipelines: one code graph, 110 rules. Rust 63.8%, Python 35.8%, SQL 0.4%. 207 commits by me." width="32%"/></picture></a>
+<a href="https://github.com/RelativelyUnknown/tree-sitter-sql-extended"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/repo-grammar.svg"/><img src="assets/repo-grammar.svg" alt="tree-sitter-sql-extended — a tree-sitter SQL grammar: an ANSI base plus 22 compiled dialects. JavaScript 88.3%, Python 6.1%, Scheme 2.9%, C 1.5%. 199 commits by me." width="32%"/></picture></a>
 </p>
 
----
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/activity.svg"/><img src="assets/activity.svg" alt="Contribution heatmap: 686 commits authored across 6 public repositories in the last year, on 89 active days, peaking at 60 in one day." width="100%"/></picture>
 
-### 🌟 About Me
-- 👨‍💻 All of my projects are available [here](https://github.com/RedPandaMC?tab=repositories)
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/languages.svg"/><img src="assets/languages.svg" alt="Languages across every public non-fork repository: TypeScript 58.1%, Python 20.1%, Rust 17.5%, CSS 2.0%, JavaScript 1.0%, Shell 0.6%, Vue 0.4%." width="100%"/></picture>
 
-### 📫 Connect with Me
-<p align="left">
-  <a href="https://www.linkedin.com/in/jurreandenys/" target="_blank">
-    <img src="https://raw.githubusercontent.com/rahuldkjain/github-profile-readme-generator/master/src/images/icons/Social/linked-in-alt.svg" alt="LinkedIn" height="30" width="40" />
-  </a>
-</p>
-
-### 🛠️ Languages and Tools
-<p align="left">
-  <a href="https://www.docker.com/" target="_blank">
-    <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/docker/docker-original-wordmark.svg" alt="Docker" width="40" height="40"/>
-  </a>
-  <a href="https://git-scm.com/" target="_blank">
-    <img src="https://www.vectorlogo.zone/logos/git-scm/git-scm-icon.svg" alt="Git" width="40" height="40"/>
-  </a>
-  <a href="https://grafana.com" target="_blank">
-    <img src="https://www.vectorlogo.zone/logos/grafana/grafana-icon.svg" alt="Grafana" width="40" height="40"/>
-  </a>
-  <a href="https://www.jenkins.io" target="_blank">
-    <img src="https://www.vectorlogo.zone/logos/jenkins/jenkins-icon.svg" alt="Jenkins" width="40" height="40"/>
-  </a>
-  <a href="https://www.linux.org/" target="_blank">
-    <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/linux/linux-original.svg" alt="Linux" width="40" height="40"/>
-  </a>
-  <a href="https://www.mysql.com/" target="_blank">
-    <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/mysql/mysql-original-wordmark.svg" alt="MySQL" width="40" height="40"/>
-  </a>
-  <a href="https://pandas.pydata.org/" target="_blank">
-    <img src="https://raw.githubusercontent.com/devicons/devicon/2ae2a900d2f041da66e950e4d48052658d850630/icons/pandas/pandas-original.svg" alt="Pandas" width="40" height="40"/>
-  </a>
-  <a href="https://www.postgresql.org" target="_blank">
-    <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/postgresql/postgresql-original-wordmark.svg" alt="PostgreSQL" width="40" height="40"/>
-  </a>
-  <a href="https://www.python.org" target="_blank">
-    <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/python/python-original.svg" alt="Python" width="40" height="40"/>
-  </a>
-  <a href="https://pytorch.org/" target="_blank">
-    <img src="https://www.vectorlogo.zone/logos/pytorch/pytorch-icon.svg" alt="PyTorch" width="40" height="40"/>
-  </a>
-  <a href="https://scikit-learn.org/" target="_blank">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/0/05/Scikit_learn_logo_small.svg" alt="Scikit-learn" width="40" height="40"/>
-  </a>
-  <a href="https://seaborn.pydata.org/" target="_blank">
-    <img src="https://seaborn.pydata.org/_images/logo-mark-lightbg.svg" alt="Seaborn" width="40" height="40"/>
-  </a>
-  <a href="https://www.tensorflow.org" target="_blank">
-    <img src="https://www.vectorlogo.zone/logos/tensorflow/tensorflow-icon.svg" alt="TensorFlow" width="40" height="40"/>
-  </a>
-</p>
+<a href="https://www.linkedin.com/in/jurreandenys/"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/footer.svg"/><img src="assets/footer.svg" alt="Open to talk about developer tooling, static analysis, and anything AI-adjacent — linkedin.com/in/jurreandenys" width="100%"/></picture></a>
