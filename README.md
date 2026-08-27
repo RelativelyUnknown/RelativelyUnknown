@@ -1,4 +1,4 @@
-<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/header.svg"/><img src="assets/header.svg" alt="RelativelyUnknown — data and AI engineering. I build tools that sit close to the code: static analysis, language grammars, and the editor surfaces around them. TypeScript, Python and Rust. 686 commits in the last year across 6 public repositories, on 89 days, peaking at 60 in one day." width="100%"/></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/header.svg"/><img src="assets/header.svg" alt="RelativelyUnknown — data and AI engineering. I build tools that sit close to the code" width="100%"/></picture>
 
 <p align="center">
 <a href="https://github.com/RelativelyUnknown/Mallard"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/repo-mallard.svg"/><img src="assets/repo-mallard.svg" alt="Mallard — a VS Code extension that tracks how much your AI coding assistant costs you. TypeScript 82.9%, Python 14.3%, JavaScript 1.7%. 129 commits by me." width="32%"/></picture></a>
