@@ -55,6 +55,13 @@
       "relation": "owner",
       "hue": 67.2,
       "first_seen": "2026-08-26"
+    },
+    {
+      "owner": "RelativelyUnknown",
+      "repo": "Tree-sitter-sql-polyglot",
+      "relation": "owner",
+      "hue": 85.8,
+      "first_seen": "2026-08-28"
     }
   ]
 }
