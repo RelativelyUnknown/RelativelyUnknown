@@ -31,6 +31,10 @@ jobs:
         run: |
           cd assets && python3 build_lang_colors.py
 
+      - name: Vendor any new icons and avatars
+        run: |
+          cd assets && python3 build_icons.py && python3 build_avatars.py
+
       - name: Clone source repositories
         run: |
           mkdir -p ../src

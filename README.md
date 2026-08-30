@@ -4,4 +4,8 @@
 
 <picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/sankey.svg"/><img src="assets/sankey.svg" alt="Commit flow: 703 commits in the past year, from repo to language, sized by commits. Tree-sitter-sql-polyglot 212, burnt 207, Mallard 129, Hobby-SelfHostedHytaleServer 87, Jepa_Experiments 62, Other repos 6, TypeScript 195, Python 169, JavaScript 137, Rust 132, C 61, Other languages 9." width="100%"/></picture>
 
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/tools.svg"/><img src="assets/tools.svg" alt="Day to day: Databricks, Spark, VS Code, GitHub Actions and Docker." width="100%"/></picture>
+
+<p align="center"><a href="https://github.com/pydantic/pydantic"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/fav-pydantic-pydantic.svg"/><img src="assets/fav-pydantic-pydantic.svg" alt="pydantic. Data validation that made Python's type hints load-bearing." width="100.00%"/></picture></a></p>
+
 <picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/footer.svg"/><img src="assets/footer.svg" alt="Happy to talk about developer tooling and anything data engineering related." width="100%"/></picture>

@@ -17,6 +17,11 @@ and build_data.py stops cloning the repo twice under both names.
 A repo with no description on GitHub keeps whatever text is already in the
 ledger, so the cards have something to show.
 
+`last_seen` is stamped on every repo the API still lists. Nothing is ever
+deleted from the ledger - a repo you delete or make private keeps its colour
+and its history here - but the stamp is how the generator tells which ones
+are still public, so it stops counting the ones that aren't.
+
 Owned repos come from the REST API (no auth needed for public repos, better
 rate limit with a token). Contributed-but-not-owned repos come from the
 GraphQL contributionsCollection, which needs a token - skipped with a
@@ -36,7 +41,8 @@ from palette import next_swatch
 HERE = pathlib.Path(__file__).resolve().parent
 LEDGER = HERE / 'repos.json'
 API = 'https://api.github.com'
-FIELDS = ('owner', 'repo', 'id', 'relation', 'swatch', 'description', 'first_seen', 'aliases')
+FIELDS = ('owner', 'repo', 'id', 'relation', 'swatch', 'description',
+          'first_seen', 'last_seen', 'aliases')
 
 
 def _request(url, token, method='GET', body=None):
@@ -133,7 +139,8 @@ def main(login):
         if entry is None:
             entry = {'owner': owner, 'repo': name, 'id': repo_id, 'relation': relation,
                      'swatch': next_swatch([e['swatch'] for e in ledger['repos']]),
-                     'description': description, 'first_seen': today}
+                     'description': description,
+                     'first_seen': today, 'last_seen': today}
             ledger['repos'].append(entry)
             by_id[repo_id] = entry
             by_name[(owner, name)] = entry
@@ -147,13 +154,17 @@ def main(login):
             renamed += 1
         entry['id'] = repo_id
         entry['relation'] = relation
+        entry['last_seen'] = today
         if description:
             entry['description'] = description
 
     ledger['repos'] = [order_fields(e) for e in ledger['repos']]
     LEDGER.write_text(json.dumps(ledger, indent=2) + '\n')
+    gone = [e['repo'] for e in ledger['repos'] if e.get('last_seen', today) != today]
     print(f'{login}: {len(owned)} owned, {len(contributed)} contributed (not owned), '
           f'{len(ledger["repos"])} tracked total, {new} new and {renamed} renamed this run')
+    if gone:
+        print(f'  no longer public (kept, not counted): {", ".join(sorted(gone))}')
 
 
 if __name__ == '__main__':

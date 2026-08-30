@@ -27,18 +27,26 @@ import collections
 import json
 import pathlib
 
+from config import devicon_name, load
 from palette import swatch_hex, NEUTRAL
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent
 ICONS = json.loads((HERE / 'icons.json').read_text())
+_avatars = HERE / 'avatars.json'
+AVATARS = json.loads(_avatars.read_text()) if _avatars.exists() else {}
 DATA = json.loads((HERE / 'data.json').read_text())
 REPOS = json.loads((HERE / 'repos.json').read_text())['repos']
 
-LOGIN = 'RelativelyUnknown'
-CARDS = 3          # repo cards in the row
+# What the blocks say and how much they show is profile.toml's business; how
+# they are drawn is this file's. See assets/config.py.
+CFG = load()
+LOGIN = CFG['profile']['login']
+WINDOW = CFG['profile']['window']
+CARDS = CFG['repos']['count']
+
 TRACK = 1000       # every block is laid out on the same unit width
-WINDOW = 'past year'
+BIO_MEASURE = 380  # the header bio wraps to this, not to the space available
 
 # Primer's neutrals, plus its link blue and success green as the only two
 # accents. Nothing here is a custom colour.
@@ -173,14 +181,14 @@ def txt(x, y, s, size=13, fill='fg', weight='400', anchor='start', family=SANS, 
             f'font-weight="{weight}" fill="{var(fill)}" text-anchor="{anchor}"{c}>{esc(s)}</text>')
 
 
-def name_value(x, y, name, value, anchor='start'):
+def name_value(x, y, name, value, anchor='start', size=11.5, vsize=10.5, fill='fg'):
     """"burnt 207" as one text run: the name, then the count a fixed gap
     later. Two tspans rather than two <text>s, so the gap is the renderer's
     measurement of the name and not this file's guess at it."""
-    return (f'<text x="{x}" y="{y}" font-family="{SANS}" font-size="11.5" '
-            f'text-anchor="{anchor}" fill="var(--fg)">'
+    return (f'<text x="{x}" y="{y}" font-family="{SANS}" font-size="{size}" '
+            f'text-anchor="{anchor}" fill="{var(fill)}">'
             f'<tspan font-weight="600">{esc(name)}</tspan>'
-            f'<tspan dx="7" font-family="{MONO}" font-size="10.5" fill="var(--muted)">'
+            f'<tspan dx="7" font-family="{MONO}" font-size="{vsize}" fill="var(--muted)">'
             f'{esc(value)}</tspan></text>')
 
 
@@ -199,6 +207,24 @@ def icon(kind, name, x, y, size, colour):
     paths = ''.join(f'<path d="{d}"/>' for d in ic['d'])
     return (f'<g transform="translate({x},{y}) scale({scale:.5f})" '
             f'fill="{var(colour)}">{paths}</g>')
+
+
+def lang_glyph(language):
+    """The devicon glyph for a language, or None to fall back to its dot -
+    Scheme and SQL have no icon anywhere, and that is fine."""
+    if not CFG['lines']['icons']:
+        return None
+    name = devicon_name(CFG, language)
+    return ('dev', name) if name in ICONS.get('dev', {}) else None
+
+
+def tool_glyph(name):
+    """devicon first, then the Simple Icons already vendored here, which
+    still carry marks devicon has no icon for at all - Databricks, say."""
+    for kind in ('dev', 'si'):
+        if name in ICONS.get(kind, {}):
+            return kind, name
+    return None
 
 
 def card(w, h, rx=6):
@@ -240,9 +266,27 @@ def write(name, theme, content):
 # =====================================================================
 # HEADER
 # =====================================================================
-BIO = ['I write developer tooling for data platforms: parsers,',
-       'linters, and a couple of VS Code extensions. Most of it',
-       'started as something that annoyed me at work.']
+def bio_lines():
+    """The bio as drawn: a paragraph wrapped to the header's measure, or the
+    lines exactly as given if the config supplies a list instead."""
+    bio = CFG['profile']['bio']
+    if isinstance(bio, list):
+        return bio
+    return wrap(bio, 14, BIO_MEASURE, 4) if bio else []
+
+
+def public_repos():
+    """How many repos are still public. The ledger keeps a repo after it is
+    deleted or made private - that is the point of a ledger, it holds the
+    colour and the history - so counting every owned row would count those
+    forever. discover_repos.py stamps last_seen on whatever the API still
+    lists, and only the newest run's stamp counts. A ledger written before
+    the stamp existed falls back to counting them all."""
+    owned = [r for r in REPOS if r.get('relation') == 'owner']
+    latest = max((r.get('last_seen', '') for r in owned), default='')
+    if not latest:
+        return len(owned)
+    return sum(1 for r in owned if r.get('last_seen') == latest)
 
 
 def top_languages(n=3):
@@ -256,17 +300,18 @@ def top_languages(n=3):
 def header(theme):
     W, H = 1000, 224
     langs = top_languages()
-    repo_count = sum(1 for r in REPOS if r.get('relation') == 'owner')
+    repo_count = public_repos()
     facts = [('code-16', f'Mostly {sentence(langs)}'),
              ('repo-16', f'{repo_count} public repositories')]
 
     b = [card(W, H)]
     b.append(f'<g class="rise"><circle cx="32" cy="21" r="3.5" fill="var(--accent)"/>'
-             f'{txt(42, 25, "Data and AI engineering", size=11.5, fill="muted")}</g>')
+             f'{txt(42, 25, CFG["profile"]["eyebrow"], size=11.5, fill="muted")}</g>')
     b.append(f'<g class="rise" style="animation-delay:.05s">'
              f'{txt(28, 62, LOGIN, size=28, weight="700")}</g>')
+    bio = bio_lines()
     b.append('<g class="rise" style="animation-delay:.1s">'
-             + ''.join(txt(28, 92 + i * 22, line, size=14) for i, line in enumerate(BIO))
+             + ''.join(txt(28, 92 + i * 22, line, size=14) for i, line in enumerate(bio))
              + '</g>')
     for i, (glyph, label) in enumerate(facts):
         y = 172 + i * 24
@@ -287,7 +332,9 @@ def header(theme):
                  f'{txt(cx, 128, str(n), size=30, weight="700", anchor="middle")}'
                  f'{txt(cx, 154, label, size=11.5, fill="muted", anchor="middle")}</g>')
 
-    alt = (f'{LOGIN}, data and AI engineering. {" ".join(BIO)} Mostly {sentence(langs)}, across '
+    eyebrow = CFG['profile']['eyebrow']
+    alt = (f'{LOGIN}, {eyebrow[:1].lower() + eyebrow[1:]}. {" ".join(bio)} '
+           f'Mostly {sentence(langs)}, across '
            f'{repo_count} public repositories. {TOTAL} commits in the {WINDOW} on '
            f'{DATA["active_days"]} days, {DATA["peak"]} of them on the busiest day.')
     return svg(W, H, alt, theme, ''.join(b)), alt
@@ -296,15 +343,23 @@ def header(theme):
 # =====================================================================
 # REPO CARDS
 # =====================================================================
-def repo_card(theme, name, description, langs, commits, slot=0, of=CARDS):
-    """One card, sized to a 1/`of` slice of the same 1000-unit track the
-    full-width blocks use. The gutter between cards is transparent margin
-    inside the slice, so the row lines up flush with the blocks above and
-    below instead of sitting inset from them."""
-    H, gutter = 190, 16
+GUTTER = 16        # between cards in a row
+
+
+def slot_geometry(slot, of):
+    """A card that is one of `of` across the same 1000-unit track the
+    full-width blocks use: its drawn width, the transparent margin inside its
+    slice of the track, and the slice itself. Keeping the gutter as margin
+    rather than as a gap between images is what makes a row line up flush with
+    the blocks above and below instead of sitting inset from them."""
     slot_w = TRACK / of
-    W = (TRACK - gutter * (of - 1)) / of
-    dx = slot * (W + gutter - slot_w)
+    w = (TRACK - GUTTER * (of - 1)) / of
+    return w, slot * (w + GUTTER - slot_w), slot_w
+
+
+def repo_card(theme, name, description, langs, commits, slot=0, of=CARDS):
+    H = 190
+    W, dx, slot_w = slot_geometry(slot, of)
     inner = W - 40
     b = [card(W, H)]
 
@@ -349,8 +404,8 @@ def repo_card(theme, name, description, langs, commits, slot=0, of=CARDS):
 
     alt = ' '.join(filter(None, [f'{name}.', description,
                                  ', '.join(shown) + '.' if shown else '', f'{meta}.']))
-    body = f'<g transform="translate({dx:.3f},0)">{"".join(b)}</g>'
-    return svg(round(slot_w, 2), H, alt, theme, body), alt
+    return svg(round(slot_w, 2), H, alt, theme,
+               f'<g transform="translate({dx:.3f},0)">{"".join(b)}</g>'), alt
 
 
 # =====================================================================
@@ -386,7 +441,8 @@ def _sankey_data():
     per_repo = {r: c for r, c in PER_REPO.items() if c > 0}
     total = sum(per_repo.values())
 
-    repos, folded_repos = _fold(per_repo, max(5, round(total * 0.01)), OTHER_REPOS)
+    floor = max(5, round(total * CFG['sankey']['fold_repos_pct'] / 100))
+    repos, folded_repos = _fold(per_repo, floor, OTHER_REPOS)
     repo_order = sorted(repos, key=repos.get, reverse=True)
 
     # every repo's commits, split across the languages that repo is written in
@@ -399,7 +455,8 @@ def _sankey_data():
     lang_totals = collections.Counter()
     for repo_flows in flows.values():
         lang_totals.update(repo_flows)
-    langs, folded_langs = _fold(lang_totals, max(8, round(total * 0.015)), OTHER_LANGS)
+    lang_floor = max(8, round(total * CFG['sankey']['fold_langs_pct'] / 100))
+    langs, folded_langs = _fold(lang_totals, lang_floor, OTHER_LANGS)
     lang_order = sorted(langs, key=langs.get, reverse=True)
     if OTHER_LANGS in lang_order:      # the catch-all always sorts last
         lang_order.append(lang_order.pop(lang_order.index(OTHER_LANGS)))
@@ -436,7 +493,8 @@ def _fit_scale(columns, inner_h, gap, min_slot):
 
 def sankey(theme):
     columns, links = _sankey_data()
-    W, H, pad, node_w, gap = 1000, 460, 26, 16, 10
+    W, H = TRACK, CFG['sankey']['height']
+    pad, node_w, gap = 26, 16, 10
     # gutters either side, wide enough for a one-line "name 123" label
     left, right = 120, 150
     inner_h = H - 2 * pad - 34
@@ -470,7 +528,7 @@ def sankey(theme):
     defs, b = [], [card(W, H)]
     ribbon_op = 0.4 if theme == 'light' else 0.5
     subtitle = f'{TOTAL} commits, {WINDOW}, by repo and then by language'
-    b.append(f'<g class="rise">{txt(28, 32, "Commit flow", size=15, weight="600")}'
+    b.append(f'<g class="rise">{txt(28, 32, CFG["sankey"]["title"], size=15, weight="600")}'
              f'{txt(W - 28, 32, subtitle, size=11.5, fill="muted", anchor="end")}</g>')
 
     for i, (src, tgt, value) in enumerate(links):
@@ -525,14 +583,14 @@ def sankey(theme):
 # =====================================================================
 # LINES BY LANGUAGE
 # =====================================================================
-def _line_rows(top=8):
+def _line_rows(top=None):
     """(language, lines, share of every line counted), biggest first, with
     the tail rolled into one row."""
     counts = collections.Counter(DATA.get('lines') or {})
     total = sum(counts.values())
     if not total:
         return [], 0
-    rows = counts.most_common(top)
+    rows = counts.most_common(top or CFG['lines']['top'])
     tail = total - sum(v for _, v in rows)
     if tail:
         rows.append((OTHER_LANGS, tail))
@@ -549,18 +607,23 @@ def lines_card(theme):
     longest = max(v for _, v, _ in rows)
     fallback = NEUTRAL[0] if theme == 'light' else NEUTRAL[1]
 
-    repos = DATA.get('line_repos') or sum(1 for r in REPOS if r.get('relation') == 'owner')
+    repos = DATA.get('line_repos') or public_repos()
     subtitle = f'{total:,} lines across {repos} public repositories'
     b = [card(W, H)]
-    b.append(f'<g class="rise">{txt(28, 32, "Lines by language", size=15, weight="600")}'
+    b.append(f'<g class="rise">{txt(28, 32, CFG["lines"]["title"], size=15, weight="600")}'
              f'{txt(W - 28, 32, subtitle, size=11.5, fill="muted", anchor="end")}</g>')
 
     for i, (name, count, pct) in enumerate(rows):
         y = top + i * row_h
         colour = fallback if name == OTHER_LANGS else LANG.get(name, fallback)
         width = max((x1 - x0) * count / longest, 3)
+        glyph = lang_glyph(name)
+        # tinted with Linguist's colour, not devicon's, so the glyph, the bar
+        # and the dots elsewhere on the page stay one colour system
+        mark = (icon(glyph[0], glyph[1], 25, y - 11, 14, colour) if glyph
+                else f'<circle cx="32" cy="{y - 4}" r="4" fill="{colour}"/>')
         b.append(f'<g class="rise" style="animation-delay:{.1 + i * .05:.2f}s">'
-                 f'<circle cx="32" cy="{y - 4}" r="4" fill="{colour}"/>'
+                 f'{mark}'
                  f'{txt(46, y, name, size=12)}'
                  f'{txt(x1 + 88, y, f"{count:,}", size=11.5, anchor="end", family=MONO)}'
                  f'{txt(W - 28, y, f"{pct:.1f}%", size=11.5, fill="muted", anchor="end")}'
@@ -575,17 +638,132 @@ def lines_card(theme):
 
 
 # =====================================================================
+# TOOLS
+# =====================================================================
+def _luminance(hex_colour):
+    h = hex_colour.lstrip('#')
+    if len(h) == 3:
+        h = ''.join(c * 2 for c in h)
+    r, g, b = (int(h[i:i + 2], 16) / 255 for i in (0, 2, 4))
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def brand(colour, theme):
+    """A tool's own brand colour, unless it would sink into this theme's
+    canvas - Rust's black and Bash's near-black vanish on the dark one, and
+    JavaScript's yellow does the same on the light one."""
+    if not colour:
+        return 'muted'
+    light = _luminance(colour)
+    if (theme == 'dark' and light < 0.25) or (theme == 'light' and light > 0.8):
+        return 'muted'
+    return colour
+
+
+def tools_card(theme):
+    items = CFG['tools']['items']
+    if not items:
+        return None, None
+    W, top, chip_h, gap = TRACK, 56, 32, 10
+
+    rows, x = [[]], 28
+    for item in items:
+        label = item.get('label') or item.get('icon', '')
+        width = 12 + 16 + 8 + tw(label, 12) + 14
+        if rows[-1] and x + width > W - 28:
+            rows.append([])
+            x = 28
+        rows[-1].append((item, label, width))
+        x += width + gap
+    H = top + len(rows) * (chip_h + gap) - gap + 18
+
+    b = [card(W, H)]
+    if CFG['tools']['title']:
+        b.append(f'<g class="rise">{txt(28, 32, CFG["tools"]["title"], size=15, weight="600")}</g>')
+
+    labels, i = [], 0
+    for r, row in enumerate(rows):
+        x, y = 28, top + r * (chip_h + gap)
+        for item, label, width in row:
+            glyph = tool_glyph(item.get('icon', ''))
+            # devicon ships a brand colour with each icon; the Simple Icons
+            # fallback set doesn't, so an item can name its own
+            known = ICONS[glyph[0]][glyph[1]].get('color') if glyph else None
+            colour = brand(item.get('color') or known, theme)
+            b.append(f'<g class="rise" style="animation-delay:{.1 + i * .04:.2f}s">'
+                     f'{rect(round(x, 1), y, round(width, 1), chip_h, "canvas", "border", rx=16)}'
+                     + (icon(glyph[0], glyph[1], round(x + 12, 1), y + 8, 16, colour) if glyph else '')
+                     + f'{txt(round(x + (36 if glyph else 14), 1), y + 21, label, size=12)}</g>')
+            labels.append(label)
+            x += width + gap
+            i += 1
+
+    alt = f'{CFG["tools"]["title"] or "Tools"}: ' + sentence(labels) + '.'
+    return svg(W, H, alt, theme, ''.join(b)), alt
+
+
+# =====================================================================
+# FAVOURITE PROJECTS
+# =====================================================================
+def url_parts(url):
+    """('pydantic', 'pydantic') out of https://github.com/pydantic/pydantic."""
+    tail = url.split('github.com/', 1)[-1].strip('/')
+    bits = [b for b in tail.split('/') if b]
+    return (bits + [None, None])[:2]
+
+
+def avatar(owner, x, y, size):
+    """The owner's picture, vendored as a data: URI by build_avatars.py. It
+    has to be embedded - an SVG that GitHub serves through <img> cannot
+    fetch anything. Until it has been fetched, or if it never can be, the
+    card draws their initial instead of breaking."""
+    r = size / 2
+    cx, cy = x + r, y + r
+    picture = AVATARS.get(owner)
+    if picture:
+        clip = 'av-' + ''.join(c for c in owner.lower() if c.isalnum())
+        return (f'<clipPath id="{clip}"><circle cx="{cx}" cy="{cy}" r="{r}"/></clipPath>'
+                f'<image href="data:{picture["mime"]};base64,{picture["data"]}" '
+                f'x="{x}" y="{y}" width="{size}" height="{size}" '
+                f'preserveAspectRatio="xMidYMid slice" clip-path="url(#{clip})"/>')
+    return (f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="var(--subtle)" '
+            f'stroke="var(--border)"/>'
+            + txt(cx, cy + 6, owner[:1].upper(), size=16, weight='600',
+                  fill='muted', anchor='middle'))
+
+
+def favourite_card(theme, item, slot=0, of=1):
+    H = 96
+    W, dx, slot_w = slot_geometry(slot, of)
+    owner, repo = url_parts(item.get('url', ''))
+    owner = item.get('owner') or owner or '?'
+    name = item.get('name') or repo or owner
+
+    b = [card(W, H), avatar(owner, 20, 30, 36)]
+    # pydantic/pydantic reads as "pydantic pydantic" otherwise
+    b.append(name_value(68, 44, name, '' if owner == name else owner, size=13, fill='link')
+             if owner != name else txt(68, 44, name, size=13, weight='600', fill='link'))
+    for i, line in enumerate(wrap(item.get('note', ''), 11.5, W - 88, 2)):
+        b.append(txt(68, 64 + i * 16, line, size=11.5, fill='muted'))
+
+    label = name if owner == name else f'{owner}/{name}'
+    alt = ' '.join(filter(None, [f'{label}.', item.get('note', '')]))
+    return svg(round(slot_w, 2), H, alt, theme,
+               f'<g transform="translate({dx:.3f},0)">{"".join(b)}</g>'), alt
+
+
+# =====================================================================
 # FOOTER
 # =====================================================================
-FOOTER = 'Happy to talk about developer tooling and anything data engineering related.'
-
-
 def footer(theme):
-    W, H = 1000, 76
+    text = CFG['profile']['footer']
+    if not text:
+        return None, None
+    W, H = TRACK, 76
     b = [card(W, H),
          '<circle cx="32" cy="41" r="5" fill="var(--accent)" class="pulse"/>',
-         txt(50, 46, FOOTER, size=13.5)]
-    return svg(W, H, FOOTER, theme, ''.join(b)), FOOTER
+         txt(50, 46, text, size=13.5)]
+    return svg(W, H, text, theme, ''.join(b)), text
 
 
 # =====================================================================
@@ -597,60 +775,115 @@ def picture(name, alt, width='100%'):
             f'width="{width}"/></picture>')
 
 
-def readme(alts, cards):
-    """The whole file. The card row is emitted without a line break between
-    the links: whitespace between them would count against the 100% the three
-    cards add up to, and push the row out of line with the blocks around it."""
-    row = ''.join(f'<a href="https://github.com/{entry["owner"]}/{entry["repo"]}">'
-                  f'{picture(name, alt, width=f"{100 / CARDS:.2f}%")}</a>'
-                  for entry, name, alt in cards)
-    blocks = [picture('header.svg', alts['header.svg']),
-              f'<p align="center">{row}</p>',
-              picture('sankey.svg', alts['sankey.svg'])]
-    if 'lines.svg' in alts:
-        blocks.append(picture('lines.svg', alts['lines.svg']))
-    blocks.append(picture('footer.svg', alts['footer.svg']))
+def readme(pieces, alts):
+    """The whole file, in the order blocks.order asked for.
+
+    A row's links are emitted without a line break between them: whitespace
+    between the images would count against the 100% the cards add up to, and
+    push the row out of line with the full-width blocks around it.
+    """
+    blocks = []
+    for kind, value in pieces:
+        if kind == 'single':
+            blocks.append(picture(value, alts[value]))
+        else:
+            width = f'{100 / len(value):.2f}%'
+            row = ''.join(f'<a href="{esc(url)}">{picture(name, alts[name], width)}</a>'
+                          for name, url in value)
+            blocks.append(f'<p align="center">{row}</p>')
     return '\n\n'.join(blocks) + '\n'
 
 
 # =====================================================================
-def active_repos(n=CARDS):
-    """The repos with the most commits of mine in the window. The profile
-    repo itself is left out - it is the page you are already looking at."""
+# THE BLOCKS THEMSELVES
+# =====================================================================
+def active_repos(n=None):
+    """The repos with the most commits of mine in the window, minus anything
+    repos.exclude names - the profile repo by default, since it is the page
+    you are already looking at."""
+    skip = set(CFG['repos']['exclude'])
     ranked = sorted(PER_REPO.items(), key=lambda kv: (-kv[1], kv[0]))
     return [(BY_NAME[name], count) for name, count in ranked
-            if name in BY_NAME and name != LOGIN][:n]
+            if name in BY_NAME and name not in skip][:n or CARDS]
 
 
-def slug(name):
-    return 'repo-' + ''.join(c if c.isalnum() else '-' for c in name.lower()).strip('-') + '.svg'
+def slug(prefix, name):
+    return prefix + ''.join(c if c.isalnum() else '-' for c in name.lower()).strip('-') + '.svg'
+
+
+def repo_row():
+    """One row of cards for the most active repos: [[(file, url, draw)]]."""
+    row = []
+    for entry, count in active_repos():
+        url = f'https://github.com/{entry["owner"]}/{entry["repo"]}'
+
+        def draw(theme, slot, of, e=entry, c=count):
+            return repo_card(theme, e['repo'], e.get('description', ''),
+                             LANGS.get(e['repo'], []), c, slot=slot, of=of)
+
+        row.append((slug('repo-', entry['repo']), url, draw))
+    return [row] if row else []
+
+
+# A block is either one full-width image, or a row of images that are links.
+def favourite_row(per_row=3):
+    """Linked cards for [[favourites.items]], at most `per_row` across."""
+    items = CFG['favourites']['items']
+    rows = []
+    for start in range(0, len(items), per_row):
+        chunk = items[start:start + per_row]
+        row = []
+        for item in chunk:
+            owner, repo = url_parts(item.get('url', ''))
+            key = f'{item.get("owner") or owner or "fav"}-{item.get("name") or repo or ""}'
+
+            def draw(theme, slot, of, it=item):
+                return favourite_card(theme, it, slot=slot, of=of)
+
+            row.append((slug('fav-', key), item.get('url', ''), draw))
+        rows.append(row)
+    return rows
+
+
+SINGLE_BLOCKS = {'header': header, 'sankey': sankey, 'lines': lines_card,
+                 'tools': tools_card, 'footer': footer}
+ROW_BLOCKS = {'repos': repo_row, 'favourites': favourite_row}
+
+
+def build():
+    pieces, alts = [], {}
+    for name in CFG['blocks']['order']:
+        if name in ROW_BLOCKS:
+            for cards in ROW_BLOCKS[name]():
+                for slot, (filename, url, draw) in enumerate(cards):
+                    for theme in THEMES:
+                        content, alt = draw(theme, slot, len(cards))
+                        write(filename, theme, content)
+                        alts[filename] = alt
+                pieces.append(('row', [(f, u) for f, u, _ in cards]))
+        elif name in SINGLE_BLOCKS:
+            filename = f'{name}.svg'
+            for theme in THEMES:
+                content, alt = SINGLE_BLOCKS[name](theme)
+                if content is None:      # nothing to draw - no data, or no text
+                    break
+                write(filename, theme, content)
+                alts[filename] = alt
+            else:
+                pieces.append(('single', filename))
+        else:
+            print(f'profile.toml: blocks.order names "{name}", which is not a block')
+    return pieces, alts
 
 
 if __name__ == '__main__':
-    cards, alts = [], {}
-    for slot, (entry, count) in enumerate(active_repos()):
-        name = slug(entry['repo'])
-        for theme in ('light', 'dark'):
-            content, alt = repo_card(theme, entry['repo'], entry.get('description', ''),
-                                     LANGS.get(entry['repo'], []), count, slot=slot)
-            write(name, theme, content)
-        cards.append((entry, name, alt))
+    pieces, alts = build()
 
-    for theme in ('light', 'dark'):
-        for block, name in ((header, 'header.svg'), (sankey, 'sankey.svg'),
-                            (lines_card, 'lines.svg'), (footer, 'footer.svg')):
-            content, alt = block(theme)
-            if content is None:      # no line counts in data.json yet
-                continue
-            write(name, theme, content)
-            alts[name] = alt
-
-    keep = set(alts) | {name for _, name, _ in cards}
     for stale in sorted(set(HERE.glob('*.svg')) | set((HERE / 'dark').glob('*.svg'))):
-        if stale.name not in keep:
+        if stale.name not in alts:
             stale.unlink()
             print(f'removed stale {stale.relative_to(ROOT)}')
 
-    (ROOT / 'README.md').write_text(readme(alts, cards))
-    print(f'wrote README.md and {2 * len(keep)} svg files (light + dark): '
-          + ', '.join(entry['repo'] for entry, _, _ in cards))
+    (ROOT / 'README.md').write_text(readme(pieces, alts))
+    print(f'wrote README.md and {2 * len(alts)} svg files (light + dark): '
+          + ', '.join(sorted(alts)))
