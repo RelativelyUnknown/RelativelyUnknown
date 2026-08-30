@@ -31,6 +31,10 @@ jobs:
         run: |
           cd assets && python3 build_lang_colors.py
 
+      - name: Vendor any new icons and avatars
+        run: |
+          cd assets && python3 build_icons.py && python3 build_avatars.py
+
       - name: Clone source repositories
         run: |
           mkdir -p ../src
@@ -39,7 +43,7 @@ jobs:
               || echo "skip $owner/$repo (not found or private)"
           done
 
-      - name: Rebuild data and SVGs
+      - name: Rebuild data, SVGs and README
         run: |
           python3 assets/build_data.py ../src
           python3 assets/generate.py
@@ -48,7 +52,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/repos.json assets/lang-colors.json assets/data.json assets/*.svg assets/dark/*.svg
+          git add -A README.md assets
           if git diff --cached --quiet; then
             echo "Nothing changed."
           else

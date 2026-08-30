@@ -1,0 +1,86 @@
+# What the profile blocks say and how much of each they show.
+#
+# Every block has a section here with its own `enabled` flag and its own
+# words. Filling a section in is all it takes to put it on the page - you do
+# not also have to add it to [blocks] order.
+#
+# Everything has a default in assets/config.py, so you can delete any line
+# and the generator carries on. Run `python3 assets/generate.py` after
+# editing; the daily workflow does it for you.
+#
+# Colours and layout are deliberately not settings - they live in
+# assets/generate.py and assets/palette.py.
+
+[profile]
+login  = "RelativelyUnknown"
+window = "past year"
+
+[blocks]
+# Order only, and only for the blocks you want moved from the default
+# sequence. Anything enabled that is missing from this list still gets added.
+order = ["header", "repos", "sankey", "lines", "tools", "favourites", "footer"]
+
+[header]
+enabled = true
+eyebrow = "Data and AI engineering"
+# One paragraph; it gets wrapped to the header's measure. Use a list of
+# strings instead if you want to choose the line breaks yourself.
+bio = "I write developer tooling for data platforms: parsers, linters, and a couple of VS Code extensions. Most of it started as something that annoyed me at work."
+
+[repos]
+enabled = true
+title   = "Most active"
+# The cards show the repos with the most of my commits in the window, not a
+# hand-kept list - the profile already has a Pinned row.
+count   = 3
+exclude = ["RelativelyUnknown"]
+
+[sankey]
+enabled        = true
+title          = "Commit flow"
+height         = 460
+fold_repos_pct = 1.0    # a repo under this share of commits folds into "Other repos"
+fold_langs_pct = 1.5
+
+[lines]
+enabled = true
+title   = "Lines by language"
+top     = 8
+icons   = true
+
+# Linguist's language name -> the devicon icon to use for it. Only the ones
+# that differ need an entry; Python, TypeScript, JavaScript and Go already
+# match. A language with no icon keeps its colour dot.
+[lines.devicon]
+Rust  = "rust"
+C     = "c"
+Shell = "bash"
+Vue   = "vuejs"
+
+[tools]
+enabled = true
+title   = "My current toolstack"
+# Seeded from what is visible in these repos - edit freely. `icon` is a
+# devicon name (https://devicon.dev); the label is yours, and `color`
+# overrides the icon's own brand colour where it has none.
+items = [
+    { label = "Databricks",     icon = "databricks", color = "#FF3621" },
+    { label = "Spark",          icon = "apachespark" },
+    { label = "VS Code",        icon = "vscode" },
+    { label = "GitHub Actions", icon = "githubactions" },
+    { label = "Docker",         icon = "docker" },
+]
+
+[favourites]
+enabled = true
+title   = "Personal favourites"
+
+# The owner's avatar is fetched once by build_avatars.py and embedded; until
+# then the card draws their initial.
+[[favourites.items]]
+url  = "https://github.com/pydantic/pydantic"
+note = "Data validation that made Python's type hints load-bearing."
+
+[footer]
+enabled = true
+text    = "Happy to talk about developer tooling and anything data engineering related."
