@@ -269,7 +269,7 @@ def write(name, theme, content):
 def bio_lines():
     """The bio as drawn: a paragraph wrapped to the header's measure, or the
     lines exactly as given if the config supplies a list instead."""
-    bio = CFG['profile']['bio']
+    bio = CFG['header']['bio']
     if isinstance(bio, list):
         return bio
     return wrap(bio, 14, BIO_MEASURE, 4) if bio else []
@@ -306,7 +306,7 @@ def header(theme):
 
     b = [card(W, H)]
     b.append(f'<g class="rise"><circle cx="32" cy="21" r="3.5" fill="var(--accent)"/>'
-             f'{txt(42, 25, CFG["profile"]["eyebrow"], size=11.5, fill="muted")}</g>')
+             f'{txt(42, 25, CFG["header"]["eyebrow"], size=11.5, fill="muted")}</g>')
     b.append(f'<g class="rise" style="animation-delay:.05s">'
              f'{txt(28, 62, LOGIN, size=28, weight="700")}</g>')
     bio = bio_lines()
@@ -332,7 +332,7 @@ def header(theme):
                  f'{txt(cx, 128, str(n), size=30, weight="700", anchor="middle")}'
                  f'{txt(cx, 154, label, size=11.5, fill="muted", anchor="middle")}</g>')
 
-    eyebrow = CFG['profile']['eyebrow']
+    eyebrow = CFG['header']['eyebrow']
     alt = (f'{LOGIN}, {eyebrow[:1].lower() + eyebrow[1:]}. {" ".join(bio)} '
            f'Mostly {sentence(langs)}, across '
            f'{repo_count} public repositories. {TOTAL} commits in the {WINDOW} on '
@@ -756,7 +756,7 @@ def favourite_card(theme, item, slot=0, of=1):
 # FOOTER
 # =====================================================================
 def footer(theme):
-    text = CFG['profile']['footer']
+    text = CFG['footer']['text']
     if not text:
         return None, None
     W, H = TRACK, 76
@@ -764,6 +764,21 @@ def footer(theme):
          '<circle cx="32" cy="41" r="5" fill="var(--accent)" class="pulse"/>',
          txt(50, 46, text, size=13.5)]
     return svg(W, H, text, theme, ''.join(b)), text
+
+
+# =====================================================================
+# ROW HEADING
+# =====================================================================
+def heading(theme, title, subtitle=""):
+    """A title for a block that is a row of separate linked images rather
+    than one card, so it has nowhere to draw its own. Same x, size and
+    weight as the titles inside the cards, so it lines up with them."""
+    W, H = TRACK, 34
+    b = [txt(28, 24, title, size=15, weight='600')]
+    if subtitle:
+        b.append(txt(W - 28, 24, subtitle, size=11.5, fill='muted', anchor='end'))
+    alt = f'{title}. {subtitle}'.strip().rstrip('.') + '.'
+    return svg(W, H, alt, theme, f'<g class="rise">{"".join(b)}</g>'), alt
 
 
 # =====================================================================
@@ -776,21 +791,27 @@ def picture(name, alt, width='100%'):
 
 
 def readme(pieces, alts):
-    """The whole file, in the order blocks.order asked for.
+    """The whole file.
 
-    A row's links are emitted without a line break between them: whitespace
-    between the images would count against the 100% the cards add up to, and
-    push the row out of line with the full-width blocks around it.
+    Nothing inside a row is separated by whitespace: a space between the
+    images counts against the 100% the cards add up to and pushes the row out
+    of line with the full-width blocks around it. A row's heading sits in the
+    same paragraph as its cards for the mirror-image reason - it is full
+    width, so the cards wrap under it by themselves, and keeping them in one
+    paragraph stops the paragraph margin floating the heading away from the
+    row it belongs to.
     """
     blocks = []
     for kind, value in pieces:
         if kind == 'single':
             blocks.append(picture(value, alts[value]))
-        else:
-            width = f'{100 / len(value):.2f}%'
-            row = ''.join(f'<a href="{esc(url)}">{picture(name, alts[name], width)}</a>'
-                          for name, url in value)
-            blocks.append(f'<p align="center">{row}</p>')
+            continue
+        head, cards = value
+        width = f'{100 / len(cards):.2f}%'
+        row = ''.join(f'<a href="{esc(url)}">{picture(name, alts[name], width)}</a>'
+                      for name, url in cards)
+        lead = picture(head, alts[head]) if head else ''
+        blocks.append(f'<p align="center">{lead}{row}</p>')
     return '\n\n'.join(blocks) + '\n'
 
 
@@ -845,23 +866,63 @@ def favourite_row(per_row=3):
     return rows
 
 
+# Every block, in the order they belong in when nothing says otherwise. A
+# block is either one full-width image, or a row of images that are links.
 SINGLE_BLOCKS = {'header': header, 'sankey': sankey, 'lines': lines_card,
                  'tools': tools_card, 'footer': footer}
 ROW_BLOCKS = {'repos': repo_row, 'favourites': favourite_row}
+CANONICAL = ['header', 'repos', 'sankey', 'lines', 'tools', 'favourites', 'footer']
+
+# what the heading above a row says on the right, where it is worth saying
+SUBTITLES = {'repos': lambda: f'most commits of mine, {WINDOW}'}
+
+
+def enabled(name):
+    return bool(CFG.get(name, {}).get('enabled', True))
+
+
+def block_order():
+    """blocks.order decides the sequence, not the guest list. Anything that
+    is switched on and has something to show gets added even when the order
+    forgets it, so filling in a section is all it takes to put it on the
+    page."""
+    wanted = [name for name in CFG['blocks']['order'] if name in CANONICAL]
+    for name in CFG['blocks']['order']:
+        if name not in CANONICAL:
+            print(f'profile.toml: blocks.order names "{name}", which is not a block')
+    extra = [name for name in CANONICAL if name not in wanted and enabled(name)]
+    if extra:
+        print(f'blocks.order does not mention {", ".join(extra)}; '
+              f'adding {"them" if len(extra) > 1 else "it"} in the usual place')
+    return sorted(wanted + extra, key=CANONICAL.index)
 
 
 def build():
     pieces, alts = [], {}
-    for name in CFG['blocks']['order']:
+    for name in block_order():
+        if not enabled(name):
+            continue
+        drew = False
+
         if name in ROW_BLOCKS:
             for cards in ROW_BLOCKS[name]():
+                head = ''
+                title = CFG[name].get('title', '')
+                if title:
+                    head = f'heading-{name}.svg'
+                    subtitle = SUBTITLES.get(name, str)()
+                    for theme in THEMES:
+                        content, alt = heading(theme, title, subtitle)
+                        write(head, theme, content)
+                        alts[head] = alt
                 for slot, (filename, url, draw) in enumerate(cards):
                     for theme in THEMES:
                         content, alt = draw(theme, slot, len(cards))
                         write(filename, theme, content)
                         alts[filename] = alt
-                pieces.append(('row', [(f, u) for f, u, _ in cards]))
-        elif name in SINGLE_BLOCKS:
+                pieces.append(('row', (head, [(f, u) for f, u, _ in cards])))
+                drew = True
+        else:
             filename = f'{name}.svg'
             for theme in THEMES:
                 content, alt = SINGLE_BLOCKS[name](theme)
@@ -871,8 +932,10 @@ def build():
                 alts[filename] = alt
             else:
                 pieces.append(('single', filename))
-        else:
-            print(f'profile.toml: blocks.order names "{name}", which is not a block')
+                drew = True
+
+        if not drew:
+            print(f'{name} is on but has nothing to show yet, so it is not in the README')
     return pieces, alts
 
 

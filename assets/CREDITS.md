@@ -36,10 +36,12 @@ appears once `data.json` has line counts in it; before that the README simply
 skips it.
 
 What the blocks say and how much each one shows lives in `profile.toml` at the
-repo root - the copy, which blocks appear and in what order, how many repo
-cards, how many languages in the lines chart. Every key has a default in
-`config.py`, so a partial file only overrides what it names. Colours and
-layout are deliberately not settings.
+repo root. Every block has a section there carrying its own `enabled` flag, its
+`title` and its settings, so filling a section in is all it takes to put it on
+the page - `[blocks] order` only decides the sequence, and anything switched on
+that it forgets is added anyway. Every key has a default in `config.py`, so a
+partial file only overrides what it names. Colours and layout are deliberately
+not settings.
 
 `README.md` is generated, not written. `generate.py` emits it alongside the
 SVGs so the card links, the alt text and the images can't drift apart - edit
