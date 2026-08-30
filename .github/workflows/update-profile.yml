@@ -31,9 +31,17 @@ jobs:
         run: |
           cd assets && python3 build_lang_colors.py
 
-      - name: Vendor any new icons and avatars
+      # Both fetch decorative assets. Neither is worth failing the run for,
+      # so the stats refresh below goes ahead either way.
+      - name: Vendor any new icons
+        continue-on-error: true
         run: |
-          cd assets && python3 build_icons.py && python3 build_avatars.py
+          cd assets && python3 build_icons.py
+
+      - name: Vendor any new avatars
+        continue-on-error: true
+        run: |
+          cd assets && python3 build_avatars.py
 
       - name: Clone source repositories
         run: |
