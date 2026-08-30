@@ -4,64 +4,68 @@
       "owner": "RelativelyUnknown",
       "repo": "Mallard",
       "relation": "owner",
-      "hue": 132.0,
+      "swatch": "blue",
+      "description": "A vscode extension to track how many tokens you are using in github copilot.",
       "first_seen": "2026-08-26"
     },
     {
       "owner": "RelativelyUnknown",
       "repo": "burnt",
       "relation": "owner",
-      "hue": 95.0,
-      "first_seen": "2026-08-26"
-    },
-    {
-      "owner": "RelativelyUnknown",
-      "repo": "tree-sitter-sql-extended",
-      "relation": "owner",
-      "hue": 169.0,
-      "first_seen": "2026-08-26"
-    },
-    {
-      "owner": "RelativelyUnknown",
-      "repo": "Hobby-SelfHostedHytaleServer",
-      "relation": "owner",
-      "hue": 76.5,
-      "first_seen": "2026-08-26"
-    },
-    {
-      "owner": "RelativelyUnknown",
-      "repo": "Jepa_Experiments",
-      "relation": "owner",
-      "hue": 113.5,
-      "first_seen": "2026-08-26"
-    },
-    {
-      "owner": "RelativelyUnknown",
-      "repo": "RelativelyUnknown",
-      "relation": "owner",
-      "hue": 150.5,
-      "first_seen": "2026-08-26"
-    },
-    {
-      "owner": "RelativelyUnknown",
-      "repo": "Hobby-VideoEditingTool",
-      "relation": "owner",
-      "hue": 187.5,
-      "first_seen": "2026-08-26"
-    },
-    {
-      "owner": "RelativelyUnknown",
-      "repo": "Netl",
-      "relation": "owner",
-      "hue": 67.2,
+      "swatch": "green",
+      "description": "Static analysis for Databricks and Spark pipelines.",
       "first_seen": "2026-08-26"
     },
     {
       "owner": "RelativelyUnknown",
       "repo": "Tree-sitter-sql-polyglot",
       "relation": "owner",
-      "hue": 85.8,
-      "first_seen": "2026-08-28"
+      "swatch": "purple",
+      "description": "SQL grammar for tree-sitter.",
+      "first_seen": "2026-08-26",
+      "aliases": [
+        "tree-sitter-sql-extended"
+      ]
+    },
+    {
+      "owner": "RelativelyUnknown",
+      "repo": "Hobby-SelfHostedHytaleServer",
+      "relation": "owner",
+      "swatch": "orange",
+      "description": "",
+      "first_seen": "2026-08-26"
+    },
+    {
+      "owner": "RelativelyUnknown",
+      "repo": "Jepa_Experiments",
+      "relation": "owner",
+      "swatch": "pink",
+      "description": "",
+      "first_seen": "2026-08-26"
+    },
+    {
+      "owner": "RelativelyUnknown",
+      "repo": "RelativelyUnknown",
+      "relation": "owner",
+      "swatch": "yellow",
+      "description": "",
+      "first_seen": "2026-08-26"
+    },
+    {
+      "owner": "RelativelyUnknown",
+      "repo": "Hobby-VideoEditingTool",
+      "relation": "owner",
+      "swatch": "red",
+      "description": "",
+      "first_seen": "2026-08-26"
+    },
+    {
+      "owner": "RelativelyUnknown",
+      "repo": "Netl",
+      "relation": "owner",
+      "swatch": "blue",
+      "description": "",
+      "first_seen": "2026-08-26"
     }
   ]
 }

@@ -11,8 +11,8 @@ consistently: total == sum(per_repo.values()).
 
 The repo list itself lives in repos.json, not here - it's the ledger
 discover_repos.py maintains (owned repos + repos I've contributed to
-without owning), and it's also where each repo's Sankey hue is frozen
-once assigned. See hues.py.
+without owning), and it's also where each repo's Sankey colour is frozen
+once assigned. See palette.py.
 
 Usage:  python3 build_data.py ~/src        # dir holding the clones
 """
