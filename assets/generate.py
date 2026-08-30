@@ -159,15 +159,21 @@ def var(colour):
     return colour if colour.startswith('#') else f'var(--{colour})'
 
 
-def txt(x, y, s, size=13, fill='fg', weight='400', anchor='start', family=SANS, cls='',
-        halo=False):
+def txt(x, y, s, size=13, fill='fg', weight='400', anchor='start', family=SANS, cls=''):
     c = f' class="{cls}"' if cls else ''
-    # a halo in the canvas colour keeps a label readable where it has to sit
-    # on top of something, without a box around it
-    h = ' stroke="var(--canvas)" stroke-width="3.5" paint-order="stroke"' if halo else ''
     return (f'<text x="{x}" y="{y}" font-family="{family}" font-size="{size}" '
-            f'font-weight="{weight}" fill="{var(fill)}" text-anchor="{anchor}"{h}{c}>'
-            f'{esc(s)}</text>')
+            f'font-weight="{weight}" fill="{var(fill)}" text-anchor="{anchor}"{c}>{esc(s)}</text>')
+
+
+def name_value(x, y, name, value, anchor='start'):
+    """"burnt 207" as one text run: the name, then the count a fixed gap
+    later. Two tspans rather than two <text>s, so the gap is the renderer's
+    measurement of the name and not this file's guess at it."""
+    return (f'<text x="{x}" y="{y}" font-family="{SANS}" font-size="11.5" '
+            f'text-anchor="{anchor}" fill="var(--fg)">'
+            f'<tspan font-weight="600">{esc(name)}</tspan>'
+            f'<tspan dx="7" font-family="{MONO}" font-size="10.5" fill="var(--muted)">'
+            f'{esc(value)}</tspan></text>')
 
 
 def rect(x, y, w, h, fill=None, stroke=None, rx=0, sw=1, cls='', op=None):
@@ -423,11 +429,12 @@ def _fit_scale(columns, inner_h, gap, min_slot):
 def sankey(theme):
     columns, links = _sankey_data()
     W, H, pad, node_w, gap = 1000, 460, 26, 16, 10
-    # gutters either side for the first and last columns' labels, so they sit
-    # beside their node instead of on top of the ribbons
-    left, right = 96, 118
+    # gutters either side, wide enough for a one-line "name 123" label
+    left, right = 120, 150
     inner_h = H - 2 * pad - 34
-    min_slot = min(26, (inner_h - gap * (max(len(c) for c in columns) - 1))
+    # one line of label per node now, so a node needs less room to be legible
+    # and more of the height goes to the flow itself
+    min_slot = min(20, (inner_h - gap * (max(len(c) for c in columns) - 1))
                    / max(len(c) for c in columns))
     scale = _fit_scale(columns, inner_h, gap, min_slot)
     col_gap = (W - left - right - node_w * len(columns)) / (len(columns) - 1)
@@ -480,21 +487,26 @@ def sankey(theme):
         b.append(f'<path d="{d}" fill="url(#f{i})" fill-opacity="{ribbon_op}" class="rise" '
                  f'style="animation-delay:{.15 + i * .02:.2f}s"/>')
 
+    # Labels: name and count on one line, set beside the node rather than
+    # stacked on it. The outer two columns have the gutters to themselves. The
+    # repo column reads to the LEFT of its node, where the only thing behind
+    # the text is that repo's own incoming band - one flat colour with clean
+    # gaps either side of it - instead of the fan-out on the right where the
+    # ribbons cross each other. Nothing needs an outline to sit on.
     for col in columns:
         for n in col:
             p = pos[n['id']]
             delay = .05 if p['col'] == 0 else .15 + p['col'] * .1
-            if p['col'] == 0:
-                lx, anchor = p['x'] - 10, 'end'
-            else:
-                lx, anchor = p['x'] + node_w + 10, 'start'
             value = f'{n["value"]:g}'
+            if p['col'] == len(columns) - 1:
+                label = name_value(p['x'] + node_w + 12, p['mid'] + 4, n['label'], value)
+            else:
+                label = name_value(p['x'] - 12, p['mid'] + 4, n['label'], value,
+                                   anchor='end')
             b.append(f'<g class="rise" style="animation-delay:{delay:.2f}s">'
                      f'<rect x="{p["x"]:.1f}" y="{p["y0"]:.1f}" width="{node_w}" '
                      f'height="{p["y1"] - p["y0"]:.1f}" rx="2" fill="{colours[n["id"]]}"/>'
-                     f'{txt(lx, p["mid"] - 2, n["label"], size=11.5, weight="600", anchor=anchor, halo=True)}'
-                     f'{txt(lx, p["mid"] + 12, value, size=10.5, fill="muted", anchor=anchor, family=MONO, halo=True)}'
-                     '</g>')
+                     f'{label}</g>')
 
     alt = (f'Commit flow: {DATA["total"]} commits in the {WINDOW}, from repo to language, sized '
            'by commits. ' + ', '.join(f'{n["label"]} {n["value"]:g}'
@@ -557,7 +569,7 @@ def lines_card(theme):
 # =====================================================================
 # FOOTER
 # =====================================================================
-FOOTER = 'Happy to talk about parsers, static analysis, or why your SQL is slow.'
+FOOTER = 'Happy to talk about developer tooling and anything data engineering related.'
 
 
 def footer(theme):

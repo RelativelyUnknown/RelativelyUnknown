@@ -4,4 +4,4 @@
 
 <picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/sankey.svg"/><img src="assets/sankey.svg" alt="Commit flow: 703 commits in the past year, from repo to language, sized by commits. Tree-sitter-sql-polyglot 212, burnt 207, Mallard 129, Hobby-SelfHostedHytaleServer 87, Jepa_Experiments 62, Other repos 6, TypeScript 195, Python 169, JavaScript 137, Rust 132, C 61, Other languages 9." width="100%"/></picture>
 
-<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/footer.svg"/><img src="assets/footer.svg" alt="Happy to talk about parsers, static analysis, or why your SQL is slow." width="100%"/></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/footer.svg"/><img src="assets/footer.svg" alt="Happy to talk about developer tooling and anything data engineering related." width="100%"/></picture>
