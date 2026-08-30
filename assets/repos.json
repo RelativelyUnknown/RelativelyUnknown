@@ -3,26 +3,32 @@
     {
       "owner": "RelativelyUnknown",
       "repo": "Mallard",
+      "id": 1267312401,
       "relation": "owner",
       "swatch": "blue",
       "description": "A vscode extension to track how many tokens you are using in github copilot.",
-      "first_seen": "2026-08-26"
+      "first_seen": "2026-08-26",
+      "last_seen": "2026-08-30"
     },
     {
       "owner": "RelativelyUnknown",
       "repo": "burnt",
+      "id": 1182541259,
       "relation": "owner",
       "swatch": "green",
       "description": "Static analysis for Databricks and Spark pipelines.",
-      "first_seen": "2026-08-26"
+      "first_seen": "2026-08-26",
+      "last_seen": "2026-08-30"
     },
     {
       "owner": "RelativelyUnknown",
       "repo": "Tree-sitter-sql-polyglot",
+      "id": 1349533566,
       "relation": "owner",
       "swatch": "purple",
-      "description": "SQL grammar for tree-sitter.",
+      "description": "SQL grammar for tree-sitter",
       "first_seen": "2026-08-26",
+      "last_seen": "2026-08-30",
       "aliases": [
         "tree-sitter-sql-extended"
       ]
@@ -30,42 +36,52 @@
     {
       "owner": "RelativelyUnknown",
       "repo": "Hobby-SelfHostedHytaleServer",
+      "id": 1151267639,
       "relation": "owner",
       "swatch": "orange",
-      "description": "",
-      "first_seen": "2026-08-26"
+      "description": "Repo for hytale server configuration. ",
+      "first_seen": "2026-08-26",
+      "last_seen": "2026-08-30"
     },
     {
       "owner": "RelativelyUnknown",
       "repo": "Jepa_Experiments",
+      "id": 1298384740,
       "relation": "owner",
       "swatch": "pink",
       "description": "",
-      "first_seen": "2026-08-26"
+      "first_seen": "2026-08-26",
+      "last_seen": "2026-08-30"
     },
     {
       "owner": "RelativelyUnknown",
       "repo": "RelativelyUnknown",
+      "id": 816371774,
       "relation": "owner",
       "swatch": "yellow",
       "description": "",
-      "first_seen": "2026-08-26"
+      "first_seen": "2026-08-26",
+      "last_seen": "2026-08-30"
     },
     {
       "owner": "RelativelyUnknown",
       "repo": "Hobby-VideoEditingTool",
+      "id": 1102539780,
       "relation": "owner",
       "swatch": "red",
-      "description": "",
-      "first_seen": "2026-08-26"
+      "description": "My private repository",
+      "first_seen": "2026-08-26",
+      "last_seen": "2026-08-30"
     },
     {
       "owner": "RelativelyUnknown",
       "repo": "Netl",
+      "id": 995579816,
       "relation": "owner",
       "swatch": "blue",
-      "description": "",
-      "first_seen": "2026-08-26"
+      "description": "Node-based etl pipeline editor using polars",
+      "first_seen": "2026-08-26",
+      "last_seen": "2026-08-30"
     }
   ]
 }
