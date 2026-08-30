@@ -77,7 +77,11 @@ def canon(name):
 def commits_by_repo():
     per = collections.Counter()
     for name, count in DATA['per_repo'].items():
-        per[canon(name)] += count
+        # A refresh that ran while a rename was still two ledger entries has
+        # the same repo in here twice, under both names. That is one repo's
+        # commits described twice, not twice as many of them, so the bigger
+        # count wins rather than the two being added up.
+        per[canon(name)] = max(per[canon(name)], count)
     return per
 
 
@@ -90,6 +94,10 @@ def langs_by_repo():
 
 PER_REPO = commits_by_repo()
 LANGS = langs_by_repo()
+# build_data.py writes total == sum(per_repo.values()), so recomputing it from
+# the folded counts is the same number in a healthy data.json - and the honest
+# one in a data.json that counted a renamed repo under both its names.
+TOTAL = sum(PER_REPO.values()) or DATA['total']
 
 
 # =====================================================================
@@ -266,7 +274,7 @@ def header(theme):
                  f'{icon("oc", glyph, 28, y - 12, 14, "muted")}'
                  f'{txt(50, y, label, size=13, fill="muted")}</g>')
 
-    stats = [(DATA['total'], f'commits, {WINDOW}'),
+    stats = [(TOTAL, f'commits, {WINDOW}'),
              (DATA['active_days'], 'days with commits'),
              (DATA['peak'], 'busiest day')]
     sx, sw = 592, 380
@@ -280,7 +288,7 @@ def header(theme):
                  f'{txt(cx, 154, label, size=11.5, fill="muted", anchor="middle")}</g>')
 
     alt = (f'{LOGIN}, data and AI engineering. {" ".join(BIO)} Mostly {sentence(langs)}, across '
-           f'{repo_count} public repositories. {DATA["total"]} commits in the {WINDOW} on '
+           f'{repo_count} public repositories. {TOTAL} commits in the {WINDOW} on '
            f'{DATA["active_days"]} days, {DATA["peak"]} of them on the busiest day.')
     return svg(W, H, alt, theme, ''.join(b)), alt
 
@@ -461,7 +469,7 @@ def sankey(theme):
 
     defs, b = [], [card(W, H)]
     ribbon_op = 0.4 if theme == 'light' else 0.5
-    subtitle = f'{DATA["total"]} commits, {WINDOW}, by repo and then by language'
+    subtitle = f'{TOTAL} commits, {WINDOW}, by repo and then by language'
     b.append(f'<g class="rise">{txt(28, 32, "Commit flow", size=15, weight="600")}'
              f'{txt(W - 28, 32, subtitle, size=11.5, fill="muted", anchor="end")}</g>')
 
@@ -508,7 +516,7 @@ def sankey(theme):
                      f'height="{p["y1"] - p["y0"]:.1f}" rx="2" fill="{colours[n["id"]]}"/>'
                      f'{label}</g>')
 
-    alt = (f'Commit flow: {DATA["total"]} commits in the {WINDOW}, from repo to language, sized '
+    alt = (f'Commit flow: {TOTAL} commits in the {WINDOW}, from repo to language, sized '
            'by commits. ' + ', '.join(f'{n["label"]} {n["value"]:g}'
                                       for n in columns[1] + columns[2]) + '.')
     return svg(W, H, alt, theme, ''.join(b), defs=''.join(defs)), alt
