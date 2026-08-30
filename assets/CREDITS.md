@@ -18,6 +18,13 @@ put - see `palette.py`. Language colours are
 rebuilt straight from Linguist's own `languages.yml` by `build_lang_colors.py`,
 so it stays current as Linguist adds or recolours languages.
 
+Line counts are counted the crude way by `build_data.py`: every line of every
+file with a source extension, blanks and comments included, in the repos I own.
+Machine-written files are left out of that count only - `parser.c` from a
+tree-sitter grammar, minified bundles - since nobody typed them. The block
+appears once `data.json` has line counts in it; before that the README simply
+skips it.
+
 `README.md` is generated, not written. `generate.py` emits it alongside the
 SVGs so the card links, the alt text and the images can't drift apart - edit
 the generator, not the README.

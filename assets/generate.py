@@ -37,6 +37,7 @@ REPOS = json.loads((HERE / 'repos.json').read_text())['repos']
 
 LOGIN = 'RelativelyUnknown'
 CARDS = 3          # repo cards in the row
+TRACK = 1000       # every block is laid out on the same unit width
 WINDOW = 'past year'
 
 # Primer's neutrals, plus its link blue and success green as the only two
@@ -187,7 +188,7 @@ def icon(kind, name, x, y, size, colour):
 
 
 def card(w, h, rx=6):
-    return rect(0.5, 0.5, w - 1, h - 1, 'canvas', 'border', rx=rx)
+    return rect(0.5, 0.5, round(w - 1, 2), round(h - 1, 2), 'canvas', 'border', rx=rx)
 
 
 def style(theme):
@@ -281,16 +282,23 @@ def header(theme):
 # =====================================================================
 # REPO CARDS
 # =====================================================================
-def repo_card(theme, name, description, langs, commits):
-    W, H = 326, 190
+def repo_card(theme, name, description, langs, commits, slot=0, of=CARDS):
+    """One card, sized to a 1/`of` slice of the same 1000-unit track the
+    full-width blocks use. The gutter between cards is transparent margin
+    inside the slice, so the row lines up flush with the blocks above and
+    below instead of sitting inset from them."""
+    H, gutter = 190, 16
+    slot_w = TRACK / of
+    W = (TRACK - gutter * (of - 1)) / of
+    dx = slot * (W + gutter - slot_w)
     inner = W - 40
     b = [card(W, H)]
 
     b.append(icon('oc', 'repo-16', 20, 26, 15, 'muted'))
-    pill_x = W - 76
+    pill_x = round(W - 76, 2)
     b.append(txt(44, 38, ellipsise(name, 13, pill_x - 54), size=13, weight='600', fill='link'))
     b.append(rect(pill_x, 24, 58, 19, None, 'border', rx=9))
-    b.append(txt(W - 47, 37, 'Public', size=10.5, fill='muted', anchor='middle'))
+    b.append(txt(round(W - 47, 2), 37, 'Public', size=10.5, fill='muted', anchor='middle'))
 
     for i, line in enumerate(wrap(description, 11.5, inner, 2)):
         b.append(txt(20, 66 + i * 17, line, size=11.5, fill='muted'))
@@ -327,7 +335,8 @@ def repo_card(theme, name, description, langs, commits):
 
     alt = ' '.join(filter(None, [f'{name}.', description,
                                  ', '.join(shown) + '.' if shown else '', f'{meta}.']))
-    return svg(W, H, alt, theme, ''.join(b)), alt
+    body = f'<g transform="translate({dx:.3f},0)">{"".join(b)}</g>'
+    return svg(round(slot_w, 2), H, alt, theme, body), alt
 
 
 # =====================================================================
@@ -460,19 +469,15 @@ def sankey(theme):
         d = (f'M{x0:.1f},{sy:.1f} C{xm:.1f},{sy:.1f} {xm:.1f},{ty:.1f} {x1:.1f},{ty:.1f} '
              f'L{x1:.1f},{ty + h:.1f} C{xm:.1f},{ty + h:.1f} {xm:.1f},{sy + h:.1f} '
              f'{x0:.1f},{sy + h:.1f} Z')
-        # the first hop is the repo's own colour end to end, so the six bands
-        # leaving the commit node read as six repos. The second fades repo ->
-        # language, which keeps a band followable across the crossings instead
-        # of letting them blend into mud
-        if src == 'commits':
-            fill = colours[tgt]
-        else:
-            fill = f'url(#f{i})'
-            defs.append(f'<linearGradient id="f{i}" gradientUnits="userSpaceOnUse" '
-                        f'x1="{x0:.1f}" x2="{x1:.1f}">'
-                        f'<stop offset="0" stop-color="{colours[src]}"/>'
-                        f'<stop offset="1" stop-color="{colours[tgt]}"/></linearGradient>')
-        b.append(f'<path d="{d}" fill="{fill}" fill-opacity="{ribbon_op}" class="rise" '
+        # every ribbon fades from where it comes from to where it goes: green
+        # into the repo's colour on the first hop, the repo's colour into the
+        # language's on the second. A band stays followable across the
+        # crossings instead of blending into mud
+        defs.append(f'<linearGradient id="f{i}" gradientUnits="userSpaceOnUse" '
+                    f'x1="{x0:.1f}" x2="{x1:.1f}">'
+                    f'<stop offset="0" stop-color="{colours[src]}"/>'
+                    f'<stop offset="1" stop-color="{colours[tgt]}"/></linearGradient>')
+        b.append(f'<path d="{d}" fill="url(#f{i})" fill-opacity="{ribbon_op}" class="rise" '
                  f'style="animation-delay:{.15 + i * .02:.2f}s"/>')
 
     for col in columns:
@@ -498,6 +503,58 @@ def sankey(theme):
 
 
 # =====================================================================
+# LINES BY LANGUAGE
+# =====================================================================
+def _line_rows(top=8):
+    """(language, lines, share of every line counted), biggest first, with
+    the tail rolled into one row."""
+    counts = collections.Counter(DATA.get('lines') or {})
+    total = sum(counts.values())
+    if not total:
+        return [], 0
+    rows = counts.most_common(top)
+    tail = total - sum(v for _, v in rows)
+    if tail:
+        rows.append((OTHER_LANGS, tail))
+    return [(name, v, 100 * v / total) for name, v in rows], total
+
+
+def lines_card(theme):
+    rows, total = _line_rows()
+    if not rows:
+        return None, None
+    W, row_h, top = TRACK, 30, 66
+    H = top + row_h * len(rows) + 12
+    x0, x1 = 196, 792                       # the bar's own track
+    longest = max(v for _, v, _ in rows)
+    fallback = NEUTRAL[0] if theme == 'light' else NEUTRAL[1]
+
+    repos = DATA.get('line_repos') or sum(1 for r in REPOS if r.get('relation') == 'owner')
+    subtitle = f'{total:,} lines across {repos} public repositories'
+    b = [card(W, H)]
+    b.append(f'<g class="rise">{txt(28, 32, "Lines by language", size=15, weight="600")}'
+             f'{txt(W - 28, 32, subtitle, size=11.5, fill="muted", anchor="end")}</g>')
+
+    for i, (name, count, pct) in enumerate(rows):
+        y = top + i * row_h
+        colour = fallback if name == OTHER_LANGS else LANG.get(name, fallback)
+        width = max((x1 - x0) * count / longest, 3)
+        b.append(f'<g class="rise" style="animation-delay:{.1 + i * .05:.2f}s">'
+                 f'<circle cx="32" cy="{y - 4}" r="4" fill="{colour}"/>'
+                 f'{txt(46, y, name, size=12)}'
+                 f'{txt(x1 + 88, y, f"{count:,}", size=11.5, anchor="end", family=MONO)}'
+                 f'{txt(W - 28, y, f"{pct:.1f}%", size=11.5, fill="muted", anchor="end")}'
+                 f'</g>')
+        b.append(f'<rect x="{x0}" y="{y - 8.5}" width="{width:.1f}" height="9" rx="2" '
+                 f'fill="{colour}" class="bar" '
+                 f'style="transform-origin:{x0}px 0;animation-delay:{.2 + i * .05:.2f}s"/>')
+
+    alt = ('Lines by language across ' + str(repos) + f' public repositories, {total:,} in total: '
+           + ', '.join(f'{n} {v:,} ({p:.1f}%)' for n, v, p in rows) + '.')
+    return svg(W, H, alt, theme, ''.join(b)), alt
+
+
+# =====================================================================
 # FOOTER
 # =====================================================================
 FOOTER = 'Happy to talk about parsers, static analysis, or why your SQL is slow.'
@@ -520,16 +577,20 @@ def picture(name, alt, width='100%'):
             f'width="{width}"/></picture>')
 
 
-def readme(header_alt, cards, sankey_alt, footer_alt):
-    rows = [picture('header.svg', header_alt), '',
-            '<p align="center">']
-    for entry, name, alt in cards:
-        url = f'https://github.com/{entry["owner"]}/{entry["repo"]}'
-        rows.append(f'<a href="{url}">{picture(name, alt, width="32%")}</a>')
-    rows += ['</p>', '',
-             picture('sankey.svg', sankey_alt), '',
-             picture('footer.svg', footer_alt), '']
-    return '\n'.join(rows)
+def readme(alts, cards):
+    """The whole file. The card row is emitted without a line break between
+    the links: whitespace between them would count against the 100% the three
+    cards add up to, and push the row out of line with the blocks around it."""
+    row = ''.join(f'<a href="https://github.com/{entry["owner"]}/{entry["repo"]}">'
+                  f'{picture(name, alt, width=f"{100 / CARDS:.2f}%")}</a>'
+                  for entry, name, alt in cards)
+    blocks = [picture('header.svg', alts['header.svg']),
+              f'<p align="center">{row}</p>',
+              picture('sankey.svg', alts['sankey.svg'])]
+    if 'lines.svg' in alts:
+        blocks.append(picture('lines.svg', alts['lines.svg']))
+    blocks.append(picture('footer.svg', alts['footer.svg']))
+    return '\n\n'.join(blocks) + '\n'
 
 
 # =====================================================================
@@ -547,28 +608,29 @@ def slug(name):
 
 if __name__ == '__main__':
     cards, alts = [], {}
-    for entry, count in active_repos():
+    for slot, (entry, count) in enumerate(active_repos()):
         name = slug(entry['repo'])
         for theme in ('light', 'dark'):
             content, alt = repo_card(theme, entry['repo'], entry.get('description', ''),
-                                     LANGS.get(entry['repo'], []), count)
+                                     LANGS.get(entry['repo'], []), count, slot=slot)
             write(name, theme, content)
         cards.append((entry, name, alt))
 
     for theme in ('light', 'dark'):
         for block, name in ((header, 'header.svg'), (sankey, 'sankey.svg'),
-                            (footer, 'footer.svg')):
+                            (lines_card, 'lines.svg'), (footer, 'footer.svg')):
             content, alt = block(theme)
+            if content is None:      # no line counts in data.json yet
+                continue
             write(name, theme, content)
             alts[name] = alt
 
-    keep = {'header.svg', 'sankey.svg', 'footer.svg'} | {name for _, name, _ in cards}
+    keep = set(alts) | {name for _, name, _ in cards}
     for stale in sorted(set(HERE.glob('*.svg')) | set((HERE / 'dark').glob('*.svg'))):
         if stale.name not in keep:
             stale.unlink()
             print(f'removed stale {stale.relative_to(ROOT)}')
 
-    (ROOT / 'README.md').write_text(
-        readme(alts['header.svg'], cards, alts['sankey.svg'], alts['footer.svg']))
+    (ROOT / 'README.md').write_text(readme(alts, cards))
     print(f'wrote README.md and {2 * len(keep)} svg files (light + dark): '
           + ', '.join(entry['repo'] for entry, _, _ in cards))
