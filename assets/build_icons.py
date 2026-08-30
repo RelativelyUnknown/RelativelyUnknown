@@ -101,7 +101,14 @@ def main(refresh=False):
         return
 
     print(f'fetching {len(missing)} of {len(names)}: {", ".join(missing)}')
-    manifest = {entry['name']: entry for entry in json.loads(fetch(MANIFEST))}
+    try:
+        manifest = {entry['name']: entry for entry in json.loads(fetch(MANIFEST))}
+    except (urllib.error.URLError, OSError, ValueError) as exc:
+        # A decorative glyph is never worth failing the run for. Leave
+        # icons.json as it is and let the next run try again; anything not
+        # vendored yet just keeps its colour dot in the meantime.
+        print(f'  cannot reach devicon ({exc}) - leaving icons.json alone')
+        return
 
     added = 0
     for name in missing:

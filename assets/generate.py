@@ -162,6 +162,12 @@ def esc(s):
     return s.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
 
 
+def plural(n, thing, many=None):
+    """"1 commit", "703 commits". Every number on this page is measured, so
+    any of them can legitimately come out as one."""
+    return f'{n:,} {thing if abs(n) == 1 else many or thing + "s"}'
+
+
 def sentence(items, last='and'):
     if len(items) < 2:
         return ''.join(items)
@@ -302,7 +308,7 @@ def header(theme):
     langs = top_languages()
     repo_count = public_repos()
     facts = [('code-16', f'Mostly {sentence(langs)}'),
-             ('repo-16', f'{repo_count} public repositories')]
+             ('repo-16', plural(repo_count, 'public repository', 'public repositories'))]
 
     b = [card(W, H)]
     b.append(f'<g class="rise"><circle cx="32" cy="21" r="3.5" fill="var(--accent)"/>'
@@ -335,8 +341,9 @@ def header(theme):
     eyebrow = CFG['header']['eyebrow']
     alt = (f'{LOGIN}, {eyebrow[:1].lower() + eyebrow[1:]}. {" ".join(bio)} '
            f'Mostly {sentence(langs)}, across '
-           f'{repo_count} public repositories. {TOTAL} commits in the {WINDOW} on '
-           f'{DATA["active_days"]} days, {DATA["peak"]} of them on the busiest day.')
+           f'{plural(repo_count, "public repository", "public repositories")}. '
+           f'{plural(TOTAL, "commit")} in the {WINDOW} on '
+           f'{plural(DATA["active_days"], "day")}, {DATA["peak"]} of them on the busiest day.')
     return svg(W, H, alt, theme, ''.join(b)), alt
 
 
@@ -398,7 +405,7 @@ def repo_card(theme, name, description, langs, commits, slot=0, of=CARDS):
         shown.append(label)
         lx += width + 14
 
-    meta = f'{commits} commits, {WINDOW}'
+    meta = f'{plural(commits, "commit")}, {WINDOW}'
     b.append(icon('oc', 'history-16', 20, 156, 12, 'muted'))
     b.append(txt(36, 166, meta, size=10.5, fill='muted'))
 
@@ -527,7 +534,7 @@ def sankey(theme):
 
     defs, b = [], [card(W, H)]
     ribbon_op = 0.4 if theme == 'light' else 0.5
-    subtitle = f'{TOTAL} commits, {WINDOW}, by repo and then by language'
+    subtitle = f'{plural(TOTAL, "commit")}, {WINDOW}, by repo and then by language'
     b.append(f'<g class="rise">{txt(28, 32, CFG["sankey"]["title"], size=15, weight="600")}'
              f'{txt(W - 28, 32, subtitle, size=11.5, fill="muted", anchor="end")}</g>')
 
@@ -574,7 +581,7 @@ def sankey(theme):
                      f'height="{p["y1"] - p["y0"]:.1f}" rx="2" fill="{colours[n["id"]]}"/>'
                      f'{label}</g>')
 
-    alt = (f'Commit flow: {TOTAL} commits in the {WINDOW}, from repo to language, sized '
+    alt = (f'Commit flow: {plural(TOTAL, "commit")} in the {WINDOW}, from repo to language, sized '
            'by commits. ' + ', '.join(f'{n["label"]} {n["value"]:g}'
                                       for n in columns[1] + columns[2]) + '.')
     return svg(W, H, alt, theme, ''.join(b), defs=''.join(defs)), alt
@@ -608,7 +615,8 @@ def lines_card(theme):
     fallback = NEUTRAL[0] if theme == 'light' else NEUTRAL[1]
 
     repos = DATA.get('line_repos') or public_repos()
-    subtitle = f'{total:,} lines across {repos} public repositories'
+    subtitle = (f'{plural(total, "line")} across '
+                + plural(repos, 'public repository', 'public repositories'))
     b = [card(W, H)]
     b.append(f'<g class="rise">{txt(28, 32, CFG["lines"]["title"], size=15, weight="600")}'
              f'{txt(W - 28, 32, subtitle, size=11.5, fill="muted", anchor="end")}</g>')
@@ -632,7 +640,9 @@ def lines_card(theme):
                  f'fill="{colour}" class="bar" '
                  f'style="transform-origin:{x0}px 0;animation-delay:{.2 + i * .05:.2f}s"/>')
 
-    alt = ('Lines by language across ' + str(repos) + f' public repositories, {total:,} in total: '
+    alt = ('Lines by language across '
+           + plural(repos, 'public repository', 'public repositories')
+           + f', {plural(total, "line")} in total: '
            + ', '.join(f'{n} {v:,} ({p:.1f}%)' for n, v, p in rows) + '.')
     return svg(W, H, alt, theme, ''.join(b)), alt
 
