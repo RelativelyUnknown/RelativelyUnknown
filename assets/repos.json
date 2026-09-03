@@ -8,7 +8,7 @@
       "swatch": "blue",
       "description": "A vscode extension to track how many tokens you are using in github copilot.",
       "first_seen": "2026-08-26",
-      "last_seen": "2026-09-02"
+      "last_seen": "2026-09-03"
     },
     {
       "owner": "RelativelyUnknown",
@@ -18,7 +18,7 @@
       "swatch": "green",
       "description": "Static analysis for Databricks and Spark pipelines.",
       "first_seen": "2026-08-26",
-      "last_seen": "2026-09-02"
+      "last_seen": "2026-09-03"
     },
     {
       "owner": "RelativelyUnknown",
@@ -28,7 +28,7 @@
       "swatch": "purple",
       "description": "SQL grammar for tree-sitter",
       "first_seen": "2026-08-26",
-      "last_seen": "2026-09-02",
+      "last_seen": "2026-09-03",
       "aliases": [
         "tree-sitter-sql-extended"
       ]
@@ -41,7 +41,7 @@
       "swatch": "orange",
       "description": "Repo for hytale server configuration. ",
       "first_seen": "2026-08-26",
-      "last_seen": "2026-09-02"
+      "last_seen": "2026-09-03"
     },
     {
       "owner": "RelativelyUnknown",
@@ -51,7 +51,7 @@
       "swatch": "pink",
       "description": "",
       "first_seen": "2026-08-26",
-      "last_seen": "2026-09-02"
+      "last_seen": "2026-09-03"
     },
     {
       "owner": "RelativelyUnknown",
@@ -61,7 +61,7 @@
       "swatch": "yellow",
       "description": "",
       "first_seen": "2026-08-26",
-      "last_seen": "2026-09-02"
+      "last_seen": "2026-09-03"
     },
     {
       "owner": "RelativelyUnknown",
@@ -71,7 +71,7 @@
       "swatch": "red",
       "description": "My private repository",
       "first_seen": "2026-08-26",
-      "last_seen": "2026-09-02"
+      "last_seen": "2026-09-03"
     },
     {
       "owner": "RelativelyUnknown",
@@ -81,7 +81,7 @@
       "swatch": "blue",
       "description": "Node-based etl pipeline editor using polars",
       "first_seen": "2026-08-26",
-      "last_seen": "2026-09-02"
+      "last_seen": "2026-09-03"
     }
   ]
 }
