@@ -27,6 +27,15 @@ jobs:
         run: |
           cd assets && python3 discover_repos.py
 
+      # Read-only PAT (90 day expiry). Not fatal: on failure the last
+      # stars.json is reused, so an expired key just freezes the stars.
+      - name: Fetch starred repos
+        continue-on-error: true
+        env:
+          STARS_TOKEN: ${{ secrets.PROFILE_UPDATE_KEY }}
+        run: |
+          cd assets && python3 discover_stars.py
+
       - name: Refresh language colours from Linguist
         run: |
           cd assets && python3 build_lang_colors.py

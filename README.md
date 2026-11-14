@@ -8,6 +8,12 @@
 
 <picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/tools.svg"/><img src="assets/tools.svg" alt="My current toolstack: Databricks, Spark, VS Code, GitHub Actions and Docker." width="100%"/></picture>
 
-<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/heading-favourites.svg"/><img src="assets/heading-favourites.svg" alt="Personal favourites." width="100%"/></picture><a href="https://github.com/pydantic/pydantic"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/fav-pydantic-pydantic.svg"/><img src="assets/fav-pydantic-pydantic.svg" alt="pydantic. Data validation that made Python's type hints load-bearing." width="100.00%"/></picture></a></p>
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/heading-favourites.svg"/><img src="assets/heading-favourites.svg" alt="Personal favourites." width="100%"/></picture><a href="https://github.com/databricks/app-templates"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/fav-databricks-app-templates.svg"/><img src="assets/fav-databricks-app-templates.svg" alt="databricks/app-templates." width="100.00%"/></picture></a></p>
+
+<p align="center"><a href="https://github.com/bloomberg/memray"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/fav-bloomberg-memray.svg"/><img src="assets/fav-bloomberg-memray.svg" alt="bloomberg/memray. Memray is a memory profiler for Python" width="100.00%"/></picture></a></p>
+
+<p align="center"><a href="https://github.com/pydantic/httpx2"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/fav-pydantic-httpx2.svg"/><img src="assets/fav-pydantic-httpx2.svg" alt="pydantic/httpx2. A next generation HTTP client for Python. 🦋" width="100.00%"/></picture></a></p>
+
+<p align="center"><a href="https://github.com/TecharoHQ/anubis"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/fav-techarohq-anubis.svg"/><img src="assets/fav-techarohq-anubis.svg" alt="TecharoHQ/anubis. Weighs the soul of incoming HTTP requests to stop AI crawlers" width="100.00%"/></picture></a></p>
 
 <picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/footer.svg"/><img src="assets/footer.svg" alt="Happy to talk about developer tooling and anything data engineering related." width="100%"/></picture>

@@ -28,7 +28,7 @@ import sys
 import urllib.error
 import urllib.request
 
-from config import load
+from config import favourite_items, load
 
 HERE = pathlib.Path(__file__).resolve().parent
 AVATARS = HERE / 'avatars.json'
@@ -74,7 +74,7 @@ def dimensions(blob):
 def owners(cfg):
     """The owner of every favourite, in the order they are listed."""
     out = []
-    for item in cfg['favourites']['items']:
+    for item in favourite_items(cfg):
         owner = item.get('owner') or url_parts(item.get('url', ''))[0]
         if owner and owner not in out:
             out.append(owner)

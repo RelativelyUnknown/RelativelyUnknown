@@ -21,6 +21,7 @@ colours stay in generate.py and palette.py. Those are the design, not
 settings.
 """
 import copy
+import json
 import pathlib
 import tomllib
 
@@ -73,7 +74,12 @@ DEFAULTS = {
     'favourites': {
         'enabled': True,
         'title': '',
-        'items': [],                # {url, note} per card, and optional {owner, name}
+        # The cards are the repos in stars.json, fetched by discover_stars.py.
+        'stars': True,
+        'stars_max': 0,             # most stars to show; 0 is all of them
+        'stars_exclude': [],        # 'owner/name' entries to leave out
+        # one column below this many cards in total, two from here up
+        'two_columns_from': 6,
     },
     'footer': {
         'enabled': True,
@@ -137,6 +143,33 @@ def devicon_name(cfg, language):
     lists the ones that differ; everything else is just the name lowered,
     which is already right for python, typescript, javascript and go."""
     return cfg['lines']['devicon'].get(language, language.lower())
+
+
+def url_parts(url):
+    """('pydantic', 'pydantic') out of https://github.com/pydantic/pydantic."""
+    tail = url.split('github.com/', 1)[-1].strip('/')
+    bits = [b for b in tail.split('/') if b]
+    return (bits + [None, None])[:2]
+
+
+def favourite_items(cfg):
+    """The starred repos in stars.json (newest star first), minus
+    favourites.stars_exclude, up to favourites.stars_max. Both
+    build_avatars.py and generate.py read this, so they always agree on who
+    is on the page."""
+    fav = cfg['favourites']
+    path = pathlib.Path(__file__).resolve().parent / 'stars.json'
+    if not fav['stars'] or not path.exists():
+        return []
+    skip = {x.lower() for x in fav['stars_exclude']}
+    stars = []
+    for star in json.loads(path.read_text()).get('stars', []):
+        full = f"{star['owner']}/{star['repo']}"
+        if full.lower() in skip:
+            continue
+        skip.add(full.lower())
+        stars.append({'url': f'https://github.com/{full}', 'note': star.get('description', '')})
+    return stars[:fav['stars_max']] if fav['stars_max'] else stars
 
 
 def load(path=CONFIG):
