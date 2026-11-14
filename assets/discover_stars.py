@@ -33,12 +33,14 @@ def get(url, token):
 
 def main(login):
     cfg = load()
-    want = cfg['favourites']['stars_max'] + len(cfg['favourites']['stars_exclude']) \
-        + len(cfg['favourites']['items']) + 5
+    fav = cfg['favourites']
+    # 0 means all of them; the page cap keeps a huge star list bounded
+    want = (fav['stars_max'] + len(fav['stars_exclude']) + len(fav['items']) + 5
+            if fav['stars_max'] else 10_000)
     token = os.environ.get('STARS_TOKEN')
     base = f'{API}/user/starred' if token else f'{API}/users/{login}/starred'
     stars, page = [], 1
-    while len(stars) < want and page <= 5:
+    while len(stars) < want and page <= 10:
         try:
             batch = get(f'{base}?per_page=100&page={page}', token)
         except (urllib.error.URLError, OSError) as exc:

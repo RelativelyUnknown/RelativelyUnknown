@@ -816,12 +816,13 @@ def readme(pieces, alts):
         if kind == 'single':
             blocks.append(picture(value, alts[value]))
             continue
-        head, cards = value
-        width = f'{100 / len(cards):.2f}%'
+        head, cards, span = value
+        width = f'{100 / span:.2f}%'
         row = ''.join(f'<a href="{esc(url)}">{picture(name, alts[name], width)}</a>'
                       for name, url in cards)
         lead = picture(head, alts[head]) if head else ''
-        blocks.append(f'<p align="center">{lead}{row}</p>')
+        align = 'left' if len(cards) < span else 'center'
+        blocks.append(f'<p align="{align}">{lead}{row}</p>')
     return '\n\n'.join(blocks) + '\n'
 
 
@@ -857,14 +858,20 @@ def repo_row():
 
 
 # A block is either one full-width image, or a row of images that are links.
+class Row(list):
+    """A row of cards that keeps its column count, so a lone card on the last
+    row stays one column wide instead of stretching across the page."""
+    def __init__(self, cards, columns):
+        super().__init__(cards)
+        self.columns = columns
+
+
 def favourite_row():
     """Linked cards for the favourites: hand-picked items plus starred repos.
     One column below favourites.two_columns_from cards in total, two from
     there up."""
     items = favourite_items(CFG)
     per_row = 2 if len(items) >= CFG['favourites']['two_columns_from'] else 1
-    if per_row == 2 and len(items) % 2:
-        items = items[:-1]      # a lone card on the last row would stretch full width
     rows = []
     for start in range(0, len(items), per_row):
         chunk = items[start:start + per_row]
@@ -877,7 +884,7 @@ def favourite_row():
                 return favourite_card(theme, it, slot=slot, of=of)
 
             row.append((slug('fav-', key), item.get('url', ''), draw))
-        rows.append(row)
+        rows.append(Row(row, per_row))
     return rows
 
 
@@ -921,6 +928,7 @@ def build():
 
         if name in ROW_BLOCKS:
             for n_row, cards in enumerate(ROW_BLOCKS[name]()):
+                span = getattr(cards, 'columns', len(cards))
                 head = ''
                 title = CFG[name].get('title', '')
                 if title and n_row == 0:
@@ -932,10 +940,10 @@ def build():
                         alts[head] = alt
                 for slot, (filename, url, draw) in enumerate(cards):
                     for theme in THEMES:
-                        content, alt = draw(theme, slot, len(cards))
+                        content, alt = draw(theme, slot, span)
                         write(filename, theme, content)
                         alts[filename] = alt
-                pieces.append(('row', (head, [(f, u) for f, u, _ in cards])))
+                pieces.append(('row', (head, [(f, u) for f, u, _ in cards], span)))
                 drew = True
         else:
             filename = f'{name}.svg'

@@ -78,7 +78,7 @@ DEFAULTS = {
         # Starred repos (stars.json, fetched by discover_stars.py) are added
         # after the hand-picked items.
         'stars': True,
-        'stars_max': 10,            # most stars to show
+        'stars_max': 0,             # most stars to show; 0 is all of them
         'stars_exclude': [],        # 'owner/name' entries to leave out
         # one column below this many cards in total, two from here up
         'two_columns_from': 6,
@@ -176,7 +176,7 @@ def favourite_items(cfg):
             continue
         skip.add(full.lower())
         stars.append({'url': f'https://github.com/{full}', 'note': star.get('description', '')})
-    return items + stars[:fav['stars_max']]
+    return items + (stars[:fav['stars_max']] if fav['stars_max'] else stars)
 
 
 def load(path=CONFIG):
