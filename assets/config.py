@@ -21,6 +21,7 @@ colours stay in generate.py and palette.py. Those are the design, not
 settings.
 """
 import copy
+import json
 import pathlib
 import tomllib
 
@@ -74,6 +75,13 @@ DEFAULTS = {
         'enabled': True,
         'title': '',
         'items': [],                # {url, note} per card, and optional {owner, name}
+        # Starred repos (stars.json, fetched by discover_stars.py) are added
+        # after the hand-picked items.
+        'stars': True,
+        'stars_max': 10,            # most stars to show
+        'stars_exclude': [],        # 'owner/name' entries to leave out
+        # one column below this many cards in total, two from here up
+        'two_columns_from': 6,
     },
     'footer': {
         'enabled': True,
@@ -137,6 +145,38 @@ def devicon_name(cfg, language):
     lists the ones that differ; everything else is just the name lowered,
     which is already right for python, typescript, javascript and go."""
     return cfg['lines']['devicon'].get(language, language.lower())
+
+
+def url_parts(url):
+    """('pydantic', 'pydantic') out of https://github.com/pydantic/pydantic."""
+    tail = url.split('github.com/', 1)[-1].strip('/')
+    bits = [b for b in tail.split('/') if b]
+    return (bits + [None, None])[:2]
+
+
+def favourite_items(cfg):
+    """Hand-picked [[favourites.items]] first, then starred repos from
+    stars.json (newest star first) that are not already listed, up to
+    favourites.stars_max. Both build_avatars.py and generate.py read this, so
+    they always agree on who is on the page."""
+    fav = cfg['favourites']
+    items = list(fav['items'])
+    if not fav['stars']:
+        return items
+    path = pathlib.Path(__file__).resolve().parent / 'stars.json'
+    if not path.exists():
+        return items
+    skip = {x.lower() for x in fav['stars_exclude']}
+    for it in items:
+        skip.add('/'.join(p or '' for p in url_parts(it.get('url', ''))).lower())
+    stars = []
+    for star in json.loads(path.read_text()).get('stars', []):
+        full = f"{star['owner']}/{star['repo']}"
+        if full.lower() in skip:
+            continue
+        skip.add(full.lower())
+        stars.append({'url': f'https://github.com/{full}', 'note': star.get('description', '')})
+    return items + stars[:fav['stars_max']]
 
 
 def load(path=CONFIG):

@@ -27,7 +27,7 @@ import collections
 import json
 import pathlib
 
-from config import devicon_name, load
+from config import devicon_name, favourite_items, load
 from palette import swatch_hex, NEUTRAL
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -857,9 +857,14 @@ def repo_row():
 
 
 # A block is either one full-width image, or a row of images that are links.
-def favourite_row(per_row=3):
-    """Linked cards for [[favourites.items]], at most `per_row` across."""
-    items = CFG['favourites']['items']
+def favourite_row():
+    """Linked cards for the favourites: hand-picked items plus starred repos.
+    One column below favourites.two_columns_from cards in total, two from
+    there up."""
+    items = favourite_items(CFG)
+    per_row = 2 if len(items) >= CFG['favourites']['two_columns_from'] else 1
+    if per_row == 2 and len(items) % 2:
+        items = items[:-1]      # a lone card on the last row would stretch full width
     rows = []
     for start in range(0, len(items), per_row):
         chunk = items[start:start + per_row]
@@ -915,10 +920,10 @@ def build():
         drew = False
 
         if name in ROW_BLOCKS:
-            for cards in ROW_BLOCKS[name]():
+            for n_row, cards in enumerate(ROW_BLOCKS[name]()):
                 head = ''
                 title = CFG[name].get('title', '')
-                if title:
+                if title and n_row == 0:
                     head = f'heading-{name}.svg'
                     subtitle = SUBTITLES.get(name, str)()
                     for theme in THEMES:
