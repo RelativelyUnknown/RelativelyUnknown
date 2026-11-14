@@ -1,0 +1,24 @@
+{
+  "stars": [
+    {
+      "owner": "databricks",
+      "repo": "app-templates",
+      "description": ""
+    },
+    {
+      "owner": "bloomberg",
+      "repo": "memray",
+      "description": "Memray is a memory profiler for Python"
+    },
+    {
+      "owner": "pydantic",
+      "repo": "httpx2",
+      "description": "A next generation HTTP client for Python. \ud83e\udd8b"
+    },
+    {
+      "owner": "TecharoHQ",
+      "repo": "anubis",
+      "description": "Weighs the soul of incoming HTTP requests to stop AI crawlers"
+    }
+  ]
+}
