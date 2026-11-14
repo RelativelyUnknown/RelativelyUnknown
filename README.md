@@ -8,6 +8,4 @@
 
 <picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/tools.svg"/><img src="assets/tools.svg" alt="My current toolstack: Databricks, Spark, VS Code, GitHub Actions and Docker." width="100%"/></picture>
 
-<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/heading-favourites.svg"/><img src="assets/heading-favourites.svg" alt="Personal favourites." width="100%"/></picture><a href="https://github.com/pydantic/pydantic"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/fav-pydantic-pydantic.svg"/><img src="assets/fav-pydantic-pydantic.svg" alt="pydantic. Data validation that made Python's type hints load-bearing." width="100.00%"/></picture></a></p>
-
 <picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/footer.svg"/><img src="assets/footer.svg" alt="Happy to talk about developer tooling and anything data engineering related." width="100%"/></picture>

@@ -75,11 +75,10 @@ items = [
 enabled = true
 title   = "Personal favourites"
 
-# The owner's avatar is fetched once by build_avatars.py and embedded; until
-# then the card draws their initial.
-[[favourites.items]]
-url  = "https://github.com/pydantic/pydantic"
-note = "Data validation that made Python's type hints load-bearing."
+# The cards are your starred repos (assets/discover_stars.py), newest first.
+# Add [[favourites.items]] entries with `url` and `note` to pin hand-picked
+# ones in front of them. Other settings: stars, stars_max (0 = all),
+# stars_exclude, two_columns_from.
 
 [footer]
 enabled = true
