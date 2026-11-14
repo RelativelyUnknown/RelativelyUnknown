@@ -1,6 +1,21 @@
 {
   "stars": [
     {
+      "owner": "palantir",
+      "repo": "pyspark-style-guide",
+      "description": "This is a guide to PySpark code style presenting common situations and the associated best practices based on the most frequent recurring topics across the PySpark repos we've encountered."
+    },
+    {
+      "owner": "pydantic",
+      "repo": "pydantic",
+      "description": "Data validation using Python type hints"
+    },
+    {
+      "owner": "DataDog",
+      "repo": "dd-trace-py",
+      "description": "Datadog Python APM Client"
+    },
+    {
       "owner": "databricks",
       "repo": "app-templates",
       "description": ""
