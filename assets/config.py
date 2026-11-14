@@ -74,9 +74,7 @@ DEFAULTS = {
     'favourites': {
         'enabled': True,
         'title': '',
-        'items': [],                # {url, note} per card, and optional {owner, name}
-        # Starred repos (stars.json, fetched by discover_stars.py) are added
-        # after the hand-picked items.
+        # The cards are the repos in stars.json, fetched by discover_stars.py.
         'stars': True,
         'stars_max': 0,             # most stars to show; 0 is all of them
         'stars_exclude': [],        # 'owner/name' entries to leave out
@@ -155,20 +153,15 @@ def url_parts(url):
 
 
 def favourite_items(cfg):
-    """Hand-picked [[favourites.items]] first, then starred repos from
-    stars.json (newest star first) that are not already listed, up to
-    favourites.stars_max. Both build_avatars.py and generate.py read this, so
-    they always agree on who is on the page."""
+    """The starred repos in stars.json (newest star first), minus
+    favourites.stars_exclude, up to favourites.stars_max. Both
+    build_avatars.py and generate.py read this, so they always agree on who
+    is on the page."""
     fav = cfg['favourites']
-    items = list(fav['items'])
-    if not fav['stars']:
-        return items
     path = pathlib.Path(__file__).resolve().parent / 'stars.json'
-    if not path.exists():
-        return items
+    if not fav['stars'] or not path.exists():
+        return []
     skip = {x.lower() for x in fav['stars_exclude']}
-    for it in items:
-        skip.add('/'.join(p or '' for p in url_parts(it.get('url', ''))).lower())
     stars = []
     for star in json.loads(path.read_text()).get('stars', []):
         full = f"{star['owner']}/{star['repo']}"
@@ -176,7 +169,7 @@ def favourite_items(cfg):
             continue
         skip.add(full.lower())
         stars.append({'url': f'https://github.com/{full}', 'note': star.get('description', '')})
-    return items + (stars[:fav['stars_max']] if fav['stars_max'] else stars)
+    return stars[:fav['stars_max']] if fav['stars_max'] else stars
 
 
 def load(path=CONFIG):

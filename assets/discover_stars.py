@@ -35,7 +35,7 @@ def main(login):
     cfg = load()
     fav = cfg['favourites']
     # 0 means all of them; the page cap keeps a huge star list bounded
-    want = (fav['stars_max'] + len(fav['stars_exclude']) + len(fav['items']) + 5
+    want = (fav['stars_max'] + len(fav['stars_exclude']) + 5
             if fav['stars_max'] else 10_000)
     token = os.environ.get('STARS_TOKEN')
     base = f'{API}/user/starred' if token else f'{API}/users/{login}/starred'

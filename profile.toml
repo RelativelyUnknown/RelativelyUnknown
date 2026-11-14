@@ -76,9 +76,8 @@ enabled = true
 title   = "Personal favourites"
 
 # The cards are your starred repos (assets/discover_stars.py), newest first.
-# Add [[favourites.items]] entries with `url` and `note` to pin hand-picked
-# ones in front of them. Other settings: stars, stars_max (0 = all),
-# stars_exclude, two_columns_from.
+# Optional settings: stars, stars_max (0 = all), stars_exclude,
+# two_columns_from.
 
 [footer]
 enabled = true
