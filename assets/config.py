@@ -50,6 +50,7 @@ DEFAULTS = {
         'enabled': True,
         'title': '',
         'count': 3,
+        'recent_days': 30,          # cards rank by commits in this many days
         'exclude': [],
     },
     'sankey': {

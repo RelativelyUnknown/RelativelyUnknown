@@ -7,7 +7,9 @@ the per-repo counts do not claim someone else's work.
 
 Every commit count here (total, per-repo, and the language split used to
 weight the Sankey) is windowed to the same last-52-weeks range, so they sum
-consistently: total == sum(per_repo.values()). The line counts are not
+consistently: total == sum(per_repo.values()). `recent` and `last` are the
+exception on purpose: commits in the last repos.recent_days days, and the
+date of the latest commit, which is what ranks the "Most active" cards. The line counts are not
 windowed - they are what is checked out today, in the repos I own.
 
 The repo list itself lives in repos.json, not here - it's the ledger
@@ -24,6 +26,8 @@ import os
 import pathlib
 import subprocess
 import sys
+
+from config import load
 
 HERE = pathlib.Path(__file__).resolve().parent
 REPOS = [(r['owner'], r['repo'], r.get('relation', 'owner'))
@@ -101,7 +105,10 @@ def main(root):
     end = datetime.date.today()
     start = end - datetime.timedelta(weeks=52)
 
+    recent_from = (end - datetime.timedelta(days=load()['repos']['recent_days'])).isoformat()
+
     days, per_repo, langs = collections.Counter(), collections.Counter(), {}
+    recent, last = collections.Counter(), {}
     lines, owned = collections.Counter(), 0
     for owner, repo, relation in REPOS:
         path = clone_dir(root, owner, repo)
@@ -113,6 +120,8 @@ def main(root):
             days[d] += 1
         if dates:
             per_repo[repo] += len(dates)
+            recent[repo] += sum(d >= recent_from for d in dates)
+            last[repo] = max(max(dates), last.get(repo, ''))
         split = language_split(path)
         if split:
             langs[repo] = split
@@ -123,7 +132,7 @@ def main(root):
     total = sum(days.values())
     out = {'total': total, 'active_days': len(days), 'peak': max(days.values(), default=0),
            'start': start.isoformat(), 'end': end.isoformat(),
-           'per_repo': dict(per_repo), 'langs': langs,
+           'per_repo': dict(per_repo), 'recent': dict(recent), 'last': last, 'langs': langs,
            'lines': dict(lines.most_common()), 'line_repos': owned}
     (HERE / 'data.json').write_text(json.dumps(out))
     print(f'{start} -> {end}: {total} commits on {out["active_days"]} days')
