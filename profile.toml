@@ -30,9 +30,11 @@ bio = "I write developer tooling for data platforms: parsers, linters, and a cou
 [repos]
 enabled = true
 title   = "Most active"
-# The cards show the repos with the most of my commits in the window, not a
-# hand-kept list - the profile already has a Pinned row.
+# The cards show the repos I have committed to most recently, not a hand-kept
+# list - the profile already has a Pinned row, so this one has to move. Ranked
+# by commits in the last `recent_days` days, then by latest commit.
 count   = 3
+recent_days = 30
 exclude = ["RelativelyUnknown"]
 
 [sankey]

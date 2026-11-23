@@ -6,8 +6,9 @@ each written twice, light and dark. README.md is written by the same run, so
 the links, the alt text and the images can't drift apart.
 
 Which repos get a card is decided by the data, not by a list kept here: the
-three with the most commits of mine in the last 52 weeks. The profile
-already has a Pinned row, so repeating it would waste the space. Card text
+three I have committed to most in the last repos.recent_days days (latest
+commit breaks ties). The profile already has a Pinned row, so a year-long
+ranking that barely moves would just repeat it. Card text
 is the repo's own GitHub description, copied into repos.json by
 discover_repos.py.
 
@@ -364,7 +365,7 @@ def slot_geometry(slot, of):
     return w, slot * (w + GUTTER - slot_w), slot_w
 
 
-def repo_card(theme, name, description, langs, commits, slot=0, of=CARDS):
+def repo_card(theme, name, description, langs, commits, last, slot=0, of=CARDS):
     H = 190
     W, dx, slot_w = slot_geometry(slot, of)
     inner = W - 40
@@ -405,7 +406,12 @@ def repo_card(theme, name, description, langs, commits, slot=0, of=CARDS):
         shown.append(label)
         lx += width + 14
 
-    meta = f'{plural(commits, "commit")}, {WINDOW}'
+    if DATA.get('recent') is None:
+        meta = f'{plural(commits, "commit")}, {WINDOW}'
+    elif commits:
+        meta = f'{plural(commits, "commit")}, past {CFG["repos"]["recent_days"]} days'
+    else:
+        meta = f'last commit {last}'
     b.append(icon('oc', 'history-16', 20, 156, 12, 'muted'))
     b.append(txt(36, 166, meta, size=10.5, fill='muted'))
 
@@ -830,13 +836,18 @@ def readme(pieces, alts):
 # THE BLOCKS THEMSELVES
 # =====================================================================
 def active_repos(n=None):
-    """The repos with the most commits of mine in the window, minus anything
-    repos.exclude names - the profile repo by default, since it is the page
-    you are already looking at."""
+    """[(repo, recent commits, latest commit date)] for the repos I have
+    committed to most in the last repos.recent_days days, latest commit
+    breaking ties, minus anything repos.exclude names - the profile repo by
+    default, since it is the page you are already looking at. A data.json
+    from before `recent` existed falls back to the year's totals."""
     skip = set(CFG['repos']['exclude'])
-    ranked = sorted(PER_REPO.items(), key=lambda kv: (-kv[1], kv[0]))
-    return [(BY_NAME[name], count) for name, count in ranked
-            if name in BY_NAME and name not in skip][:n or CARDS]
+    recent, last = DATA.get('recent'), DATA.get('last', {})
+    counts = PER_REPO if recent is None else recent
+    ranked = sorted(PER_REPO, key=lambda r: last.get(r, ''), reverse=True)
+    ranked.sort(key=lambda r: -counts.get(r, 0))      # stable: ties stay newest first
+    return [(BY_NAME[r], counts.get(r, 0), last.get(r, '')) for r in ranked
+            if r in BY_NAME and r not in skip][:n or CARDS]
 
 
 def slug(prefix, name):
@@ -846,12 +857,12 @@ def slug(prefix, name):
 def repo_row():
     """One row of cards for the most active repos: [[(file, url, draw)]]."""
     row = []
-    for entry, count in active_repos():
+    for entry, count, last in active_repos():
         url = f'https://github.com/{entry["owner"]}/{entry["repo"]}'
 
-        def draw(theme, slot, of, e=entry, c=count):
+        def draw(theme, slot, of, e=entry, c=count, d=last):
             return repo_card(theme, e['repo'], e.get('description', ''),
-                             LANGS.get(e['repo'], []), c, slot=slot, of=of)
+                             LANGS.get(e['repo'], []), c, d, slot=slot, of=of)
 
         row.append((slug('repo-', entry['repo']), url, draw))
     return [row] if row else []
@@ -896,7 +907,7 @@ ROW_BLOCKS = {'repos': repo_row, 'favourites': favourite_row}
 CANONICAL = ['header', 'repos', 'sankey', 'lines', 'tools', 'favourites', 'footer']
 
 # what the heading above a row says on the right, where it is worth saying
-SUBTITLES = {'repos': lambda: f'most commits of mine, {WINDOW}'}
+SUBTITLES = {'repos': lambda: f'what I committed to most, past {CFG["repos"]["recent_days"]} days'}
 
 
 def enabled(name):
