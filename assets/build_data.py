@@ -33,7 +33,8 @@ HERE = pathlib.Path(__file__).resolve().parent
 REPOS = [(r['owner'], r['repo'], r.get('relation', 'owner'))
          for r in json.loads((HERE / 'repos.json').read_text())['repos']]
 
-MINE = {'jurreandenys@gmail.com', '39960330+RedPandaMC@users.noreply.github.com'}
+MINE = {'jurreandenys@gmail.com', '39960330+RedPandaMC@users.noreply.github.com',
+        '39960330+RelativelyUnknown@users.noreply.github.com'}   # same account, after the rename
 NOT_ME = ('claude', 'dependabot', 'bot]')
 
 EXT = {'.py': 'Python', '.rs': 'Rust', '.ts': 'TypeScript', '.tsx': 'TypeScript',
