@@ -4,7 +4,7 @@
 
 <picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/sankey.svg"/><img src="assets/sankey.svg" alt="Commit flow: 740 commits in the past year, from repo to language, sized by commits. Tree-sitter-sql-polyglot 229, burnt 207, Mallard 129, Hobby-SelfHostedHytaleServer 87, Jepa_Experiments 62, azure-kusto-python 25, RelativelyUnknown 1, Python 195, TypeScript 191, JavaScript 169, Rust 132, C 41, Other languages 12." width="100%"/></picture>
 
-<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/lines.svg"/><img src="assets/lines.svg" alt="Lines by language across 11 public repositories, 256,125 lines in total: TypeScript 95,581 (37.3%), JavaScript 69,597 (27.2%), Python 43,688 (17.1%), C 16,576 (6.5%), Rust 15,999 (6.2%), Shell 9,468 (3.7%), Scheme 4,220 (1.6%), Go 644 (0.3%), Other languages 352 (0.1%)." width="100%"/></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/lines.svg"/><img src="assets/lines.svg" alt="Lines by language across 11 public repositories, 256,146 lines in total: TypeScript 95,581 (37.3%), JavaScript 69,597 (27.2%), Python 43,709 (17.1%), C 16,576 (6.5%), Rust 15,999 (6.2%), Shell 9,468 (3.7%), Scheme 4,220 (1.6%), Go 644 (0.3%), Other languages 352 (0.1%)." width="100%"/></picture>
 
 <picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/tools.svg"/><img src="assets/tools.svg" alt="My current toolstack: Databricks, Spark, VS Code, GitHub Actions and Docker." width="100%"/></picture>
 
